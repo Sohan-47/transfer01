@@ -12,6 +12,12 @@ const io = new Server(server, {
 
 app.use(express.static('.')); // Serve current directory files
 
+// Serve the game on root URL
+const path = require('path');
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'cervaeu.html'));
+});
+
 // Game Rooms State
 // Room ID -> { host: socketId, client: socketId, mapData: null, turnData: null }
 const rooms = {};
