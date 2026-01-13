@@ -3,34 +3,23 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CERVAEU - Strategic Warfare</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         :root {
             /* Paper Theme Palette */
             --bg-color: #2c2826;
-            /* Darker outer background (table) */
             --panel-color: #f0e6d2;
-            /* Light paper for UI */
             --text-color: #2b2520;
-            /* Dark ink */
             --accent-color: #8b4513;
-            /* Brown/Leather accent */
 
             /* Player Colors - Ink Style */
             --p1-color: #2b5c8a;
-            /* Faded Navy */
             --p2-color: #a83232;
-            /* Faded Crimson */
-
             --neutral-color: #d8cfbc;
-            /* Base Paper */
             --impassable-color: #8c8474;
-            /* Mountain grey-brown */
-
             --selected-color: #ffb84d;
-            /* Highlighter yellow/orange */
             --border-color: #5c5040;
         }
 
@@ -47,6 +36,37 @@
             display: flex;
             height: 100vh;
             overflow: hidden;
+            /* Default: Desktop Row Layout */
+            flex-direction: row;
+        }
+
+        /* Mobile Layout */
+        @media (max-width: 1000px) {
+            body {
+                flex-direction: column-reverse;
+                /* UI on bottom, Map on top */
+            }
+
+            #ui-panel {
+                width: 100% !important;
+                height: 40% !important;
+                border-left: none !important;
+                border-top: 8px solid #222 !important;
+            }
+
+            #game-container {
+                height: 60% !important;
+                width: 100%;
+                overflow: hidden;
+            }
+
+            canvas {
+                /* Scale map to fit width on mobile */
+                width: 100%;
+                height: auto;
+                max-height: 100%;
+                object-fit: contain;
+            }
         }
 
         #game-container {
@@ -61,21 +81,21 @@
         canvas {
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             background-color: #e6dcc3;
-            /* Fallback */
             cursor: crosshair;
         }
 
         #ui-panel {
             width: 380px;
+            min-width: 300px;
             background-color: var(--panel-color);
             border-left: 8px solid #222;
-            /* Binding look */
             display: flex;
             flex-direction: column;
             padding: 20px;
             box-sizing: border-box;
             overflow-y: auto;
             box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3);
+            z-index: 10;
         }
 
         h1 {
