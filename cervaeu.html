@@ -1,0 +1,3615 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CERVAEU - Strategic Warfare</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        :root {
+            /* Paper Theme Palette */
+            --bg-color: #2c2826;
+            /* Darker outer background (table) */
+            --panel-color: #f0e6d2;
+            /* Light paper for UI */
+            --text-color: #2b2520;
+            /* Dark ink */
+            --accent-color: #8b4513;
+            /* Brown/Leather accent */
+
+            /* Player Colors - Ink Style */
+            --p1-color: #2b5c8a;
+            /* Faded Navy */
+            --p2-color: #a83232;
+            /* Faded Crimson */
+
+            --neutral-color: #d8cfbc;
+            /* Base Paper */
+            --impassable-color: #8c8474;
+            /* Mountain grey-brown */
+
+            --selected-color: #ffb84d;
+            /* Highlighter yellow/orange */
+            --border-color: #5c5040;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            background-image: repeating-linear-gradient(45deg, #262220 25%, transparent 25%, transparent 75%, #262220 75%, #262220), repeating-linear-gradient(45deg, #262220 25%, #2c2826 25%, #2c2826 75%, #262220 75%, #262220);
+            background-position: 0 0, 10px 10px;
+            background-size: 20px 20px;
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
+            /* Typewriter font */
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: transparent;
+        }
+
+        canvas {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            background-color: #e6dcc3;
+            /* Fallback */
+            cursor: crosshair;
+        }
+
+        #ui-panel {
+            width: 380px;
+            background-color: var(--panel-color);
+            border-left: 8px solid #222;
+            /* Binding look */
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: var(--text-color);
+            font-size: 28px;
+            margin-top: 0;
+            text-align: center;
+            letter-spacing: 2px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.4);
+            padding: 10px;
+            border: 1px solid #c0b4a0;
+        }
+
+        .section-title {
+            color: var(--accent-color);
+            font-size: 14px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--accent-color);
+            padding-bottom: 4px;
+        }
+
+        .player-card {
+            margin-bottom: 15px;
+        }
+
+        .player-name {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .resource-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            margin-bottom: 4px;
+            font-family: monospace;
+        }
+
+        .morale-bar-container {
+            height: 10px;
+            background: #444;
+            border-radius: 5px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .morale-bar {
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        .btn {
+            background-color: #3c4146;
+            color: white;
+            border: 1px solid var(--accent-color);
+            padding: 10px;
+            width: 100%;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-color);
+            color: #14181c;
+        }
+
+        .btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #444;
+        }
+
+        .btn.disabled:hover {
+            background-color: #3c4146;
+            color: white;
+        }
+
+        #battle-log {
+            flex-grow: 1;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-y: auto;
+            color: #aaa;
+            max-height: 200px;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 2px;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: var(--panel-color);
+            padding: 20px;
+            border: 2px solid var(--accent-color);
+            border-radius: 8px;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+        }
+
+        .modal h2 {
+            color: var(--accent-color);
+            margin-top: 0;
+        }
+
+        input[type=range] {
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        #selected-region-info {
+            font-size: 14px;
+        }
+
+        .build-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #2a3036;
+            margin-bottom: 8px;
+            padding: 8px;
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+
+        .build-option:hover {
+            border-color: var(--accent-color);
+        }
+
+        .build-option.cant-afford {
+            opacity: 0.5;
+            border-color: #522;
+        }
+
+        .build-option.built {
+            background-color: #2a402a;
+            border-color: #4f4;
+            pointer-events: none;
+        }
+
+        .cost-text {
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        #victory-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            color: var(--accent-color);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        #victory-screen h1 {
+            font-size: 48px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Background Music -->
+    <audio id="bgm" src="OST.mpeg" loop preload="auto"></audio>
+
+    <!-- Mute Button (top-left) -->
+    <button id="mute-btn" onclick="toggleMute()" style="
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 1001;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        border: 2px solid #555;
+        border-radius: 8px;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 18px;
+        font-family: inherit;
+    ">🔊</button>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Action Menu Modal -->
+        <div id="action-modal" class="modal-overlay">
+            <div class="modal">
+                <h2 id="action-title">MOVE TROOPS</h2>
+                <div id="action-details">From Region X to Y</div>
+                <div style="margin-top: 10px;">Available: <span id="action-max-troops">100</span></div>
+
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button class="btn" style="width: 40px;" onclick="adjustTroops(-10)">-</button>
+                    <input type="range" id="troop-slider" min="0" max="100" value="50" oninput="updateTroopLabel()">
+                    <button class="btn" style="width: 40px;" onclick="adjustTroops(10)">+</button>
+                </div>
+                <div style="font-size: 24px; color: var(--selected-color); font-weight: bold;" id="troop-val-label">50
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn" onclick="confirmAction()">CONFIRM</button>
+                    <button class="btn" onclick="closeModals()">CANCEL</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Build Menu Modal -->
+        <div id="build-modal" class="modal-overlay">
+            <div class="modal">
+                <h2>CONSTRUCTION</h2>
+                <div id="build-list"></div>
+                <div class="modal-actions">
+                    <button class="btn" onclick="closeModals()">CLOSE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget Breakdown Modal -->
+        <div id="budget-modal" class="modal-overlay">
+            <div class="modal" style="width: 500px; max-width: 90%;">
+                <h2>BUDGET BREAKDOWN</h2>
+                <div id="budget-content"
+                    style="text-align: left; font-size: 14px; max-height: 400px; overflow-y: auto;">
+                    <!-- Injected via JS -->
+                </div>
+                <div class="modal-actions">
+                    <button class="btn" onclick="closeModals()">CLOSE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Battles History Modal -->
+        <div id="battles-modal" class="modal-overlay">
+            <div class="modal" style="width: 650px; max-width: 95%;">
+                <h2>⚔️ BATTLE HISTORY</h2>
+                <div id="battles-content"
+                    style="text-align: left; font-size: 12px; max-height: 500px; overflow-y: auto; font-family: monospace;">
+                    <!-- Injected via JS -->
+                </div>
+                <div class="modal-actions">
+                    <button class="btn" onclick="closeModals()">CLOSE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Replay Choice Modal -->
+        <div id="replay-modal" class="modal-overlay" style="z-index: 150;">
+            <div class="modal">
+                <h2>⚔️ TURN RESOLUTION</h2>
+                <p style="margin: 15px 0;">Both players have confirmed. Watch the action unfold?</p>
+                <div style="margin: 15px 0;">
+                    <label style="display: block; margin-bottom: 10px;">Speed:</label>
+                    <select id="replay-speed-select" style="padding: 8px; font-family: inherit; width: 100%;">
+                        <option value="3000" selected>Cinematic (3s)</option>
+                        <option value="1500">Slow (1.5s)</option>
+                        <option value="1000">Normal (1s)</option>
+                        <option value="500">Fast (0.5s)</option>
+                        <option value="250">Very Fast (0.25s)</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn" onclick="startReplay()">▶️ WATCH</button>
+                    <button class="btn" onclick="skipReplay()">⏭️ SKIP</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Replay Overlay (shown during replay) -->
+        <div id="replay-overlay"
+            style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 140; pointer-events: none;">
+            <div
+                style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: var(--panel-color); padding: 15px 30px; border: 2px solid var(--accent-color); border-radius: 8px; text-align: center; pointer-events: auto; min-width: 300px;">
+                <div id="replay-phase-indicator"
+                    style="font-size: 12px; letter-spacing: 2px; color: #888; margin-bottom: 8px;">
+                    <span id="phase-move" style="padding: 3px 8px; border-radius: 4px;">🚚 MOVEMENT</span>
+                    <span style="color: #444;">→</span>
+                    <span id="phase-build" style="padding: 3px 8px; border-radius: 4px;">🔨 CONSTRUCTION</span>
+                    <span style="color: #444;">→</span>
+                    <span id="phase-attack" style="padding: 3px 8px; border-radius: 4px;">⚔️ COMBAT</span>
+                </div>
+                <div id="replay-action-text" style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">Action...
+                </div>
+                <div id="replay-progress" style="font-size: 12px; color: #666;">Action 1 of 5</div>
+                <button class="btn" style="margin-top: 10px; padding: 5px 20px;" onclick="skipReplay()">SKIP ⏭️</button>
+            </div>
+        </div>
+
+        <!-- Victory Screen -->
+        <div id="victory-screen">
+            <h1 id="victory-text">PLAYER WINS</h1>
+            <button class="btn" style="width: 200px;" onclick="location.reload()">PLAY AGAIN</button>
+        </div>
+
+    </div>
+
+    <div id="ui-panel">
+        <h1>CERVAEU</h1>
+
+        <div class="section">
+            <div class="resource-row">
+                <span>TURN: <span id="turn-display">1</span></span>
+                <span id="phase-display">PLANNING</span>
+            </div>
+        </div>
+
+        <div class="section" id="player-stats-container">
+            <!-- Injected via JS -->
+        </div>
+
+        <div class="section">
+            <div class="section-title">ACTIONS</div>
+            <button class="btn" onclick="game.endTurn()">END TURN (SPACE)</button>
+            <button class="btn" onclick="game.renderer.toggleControl()">TOGGLE CONTROL (C)</button>
+            <button class="btn" onclick="game.renderer.toggleSupply()">TOGGLE SUPPLY (S)</button>
+            <button class="btn"
+                onclick="game.queueAction(game.isMultiplayer ? game.myPlayerId : game.currentPlayer, {type: 'propaganda_upgrade'})">UPGRADE
+                PROPAGANDA ($200+)</button>
+            <button class="btn" id="espionage-btn" onclick="activateEspionage()">🕵️ ESPIONAGE ($500)</button>
+            <button class="btn" onclick="openBudgetModal()">📊 BUDGET</button>
+            <button class="btn" onclick="openBattlesModal()">⚔️ BATTLES</button>
+            <button class="btn" onclick="ScenarioEditor.toggle()" style="background:#555; margin-top:10px;">🛠️
+                SCENARIO</button>
+        </div>
+
+        <div class="section">
+            <div class="section-title">SELECTION</div>
+            <div id="selected-region-info">Select a region...</div>
+        </div>
+
+        <div class="section" style="display:flex; flex-direction:column; flex-grow:1;">
+            <div class="section-title">LOG</div>
+            <div id="battle-log"></div>
+        </div>
+    </div>
+
+    <!-- Multiplayer Menu Modal -->
+    <div id="multiplayer-modal"
+        style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1000; font-family: 'Courier New', monospace;">
+        <h1 style="font-size:3em; margin-bottom: 20px;">CERVAEU</h1>
+        <div
+            style="background:#e6dcc3; padding:20px; border-radius:5px; color:black; text-align:center; min-width:300px; border: 2px solid #5c5040;">
+            <h2>Multiplayer Setup</h2>
+            <div style="margin:20px 0;">
+                <input type="text" id="room-id" placeholder="Enter Room Name" value="WAR_ROOM_1"
+                    style="padding:10px; font-family:inherit; width:200px; border:1px solid #5c5040;">
+            </div>
+            <div style="margin:15px 0; text-align:left; padding:10px; background:rgba(0,0,0,0.05); border-radius:3px;">
+                <label style="display:flex; align-items:center; cursor:pointer;">
+                    <input type="checkbox" id="cinematics-pref" checked
+                        style="margin-right:10px; width:18px; height:18px;">
+                    <span style="font-size:14px;">🎬 Enable Turn Cinematics<br><span
+                            style="font-size:11px; color:#666;">(Watch actions play out each turn)</span></span>
+                </label>
+            </div>
+            <div style="display:flex; justify-content:space-around;">
+                <button onclick="joinGame()"
+                    style="padding:10px 20px; cursor:pointer; font-family:inherit; background:#2b5c8a; color:white; border:none; font-weight:bold;">JOIN
+                    / HOST</button>
+            </div>
+            <p id="connection-status" style="margin-top:15px; font-size:0.9em; color:#5c5040;">Not Connected</p>
+        </div>
+    </div>
+
+    <!-- Load Socket.io from local server (works even if opening HTML file directly) -->
+    <!-- Load Socket.io from local server (works even if opening HTML file directly) -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="network.js"></script>
+    <script src="scenario_editor.js"></script>
+    <script>
+        /**
+         * CERVAEU - JS Implementation
+         * Ported from Python/Pygame source
+         */
+
+        // ================= CONSTANTS =================
+        const CONSTANTS = {
+            // Canvas dimensions (Logical)
+            MAP_WIDTH: 900,
+            MAP_HEIGHT: 700,
+            NUM_REGIONS: 50, // Number of irregular territories
+            OFFSET_X: 20,
+            OFFSET_Y: 20,
+            COLORS: {
+                BG: '#e6dcc3', // Parchment
+                P1: 'rgba(43, 92, 138, 0.8)', // Ink Blue
+                P2: 'rgba(168, 50, 50, 0.8)', // Ink Red
+                NEUTRAL: 'rgba(216, 207, 188, 0.5)', // Faint Paper
+                IMPASSABLE: '#a0a0a0', // Greyed out sketch
+                SELECTED: 'rgba(255, 184, 77, 0.4)', // Highlighter
+                HOVER: 'rgba(0, 0, 0, 0.1)',
+                ACCENT: '#8b4513',
+                TERRAIN: {
+                    NORMAL: '#e6dcc3',
+                    IMPASSABLE: '#8c8474',
+                    RARE: '#d4af37', // Gold Leaf
+                    MATERIAL: '#708090', // Slate
+                    OIL: '#2f4f4f' // Dark Slate
+                }
+            }
+        };
+
+        const TerrainType = {
+            NORMAL: 0,
+            IMPASSABLE: 1,
+            RARE_EARTH_MINE: 2,
+            MATERIAL_MINE: 3,
+            OIL_RIG: 4,
+            FOREST: 5
+        };
+
+        const BuildingType = {
+            HEADQUARTERS: 0,
+            MILITARY_CAMP: 1,
+            ARMOURY: 2,
+            ARTILLERY: 3,
+            SNIPER_TOWER: 4
+        };
+
+        // ================= BALANCE CONFIG =================
+        // All game balance values in one place for easy tweaking
+        const BALANCE = {
+            // === ECONOMY ===
+            BASE_INCOME: { money: 100, materials: 50, oil: 50 },
+            HQ_INCOME_PER_LEVEL: { money: 50, materials: 25, oil: 25 },
+            MINE_INCOME_PER_LEVEL: 30,        // Money per mine level
+            MATERIAL_INCOME_PER_LEVEL: 25,    // Materials per material mine
+            OIL_INCOME_PER_LEVEL: 20,         // Oil per oil rig
+
+            // === COMBAT MODIFIERS ===
+            // Formula: Base + (stat / divisor)
+            // Equipment: 0.5 to 1.5 range (when equipment 0-200)
+            EQUIPMENT_BASE: 0.5,
+            EQUIPMENT_DIVISOR: 200,
+            // Morale: 0.5 to 1.5 range (when morale 0-200)
+            MORALE_BASE: 0.5,
+            MORALE_DIVISOR: 200,
+            // Control: 0.7 to 1.0 range (when control 0-100)
+            CONTROL_BASE: 0.7,
+            CONTROL_DIVISOR: 333,
+            // Casualty rate (fraction of losing power)
+            CASUALTY_RATE: 0.3,
+            // Troop movement oil cost per troop
+            TROOP_MOVE_OIL_COST: 0.1,
+
+            // === BUILDINGS ===
+            BARRACKS_TROOPS_PER_LEVEL: 20,    // Troops generated per barracks level
+            ARTILLERY_CONTROL_PER_LEVEL: 12,  // Control bonus per artillery level
+            ARTILLERY_RANGE_MULTIPLIER: 2.5,  // Range in region units
+            SNIPER_CONTROL_PER_LEVEL: 8,      // Control bonus per sniper level
+            SNIPER_RANGE_MULTIPLIER: 1.5,     // Range in region units
+            ARMORY_EQUIPMENT_PER_LEVEL: 10,   // Equipment gained per armory level
+
+            // === HQ MOVEMENT ===
+            HQ_MOVE_COST_MONEY: 300,
+            HQ_MOVE_COST_OIL: 100,
+            HQ_MOVE_COOLDOWN_TURNS: 3,
+
+            // === PROPAGANDA ===
+            PROPAGANDA_BASE_COST: 200,        // Cost for level 1
+            PROPAGANDA_COST_PER_LEVEL: 300,   // Additional cost per level after 1
+            PROPAGANDA_MORALE_BOOST: 5,       // Morale gained per propaganda level per turn
+
+            // === TROOPS ===
+            STARTING_TROOPS: 150,             // Troops each player starts with
+            MAX_MORALE: 150,                  // Maximum morale cap
+            MORALE_DECAY_RATE: 2,             // Morale lost per turn naturally
+            MORALE_LOSS_ON_DEFEAT: 5,         // Morale lost when losing a battle
+            MORALE_GAIN_ON_VICTORY: 3,        // Morale gained when winning a battle
+
+            // === REINFORCEMENTS ===
+            BASE_REINFORCEMENTS: 10,          // Base troops per turn
+            REINFORCEMENTS_PER_TERRITORY: 2, // Extra troops per owned territory
+        };
+
+        const BuildingData = {
+            [BuildingType.HEADQUARTERS]: { name: "Headquarters", build: { m: 200, mt: 150, o: 100 }, maint: { m: 50, mt: 30, o: 40 } },
+            [BuildingType.MILITARY_CAMP]: { name: "Military Camp", build: { m: 150, mt: 100, o: 80 }, maint: { m: 40, mt: 25, o: 35 } },
+            [BuildingType.ARMOURY]: { name: "Armoury", build: { m: 120, mt: 80, o: 60 }, maint: { m: 25, mt: 15, o: 20 } },
+            [BuildingType.ARTILLERY]: { name: "Artillery", build: { m: 180, mt: 120, o: 90 }, maint: { m: 30, mt: 20, o: 30 } },
+            [BuildingType.SNIPER_TOWER]: { name: "Sniper Tower", build: { m: 100, mt: 70, o: 50 }, maint: { m: 15, mt: 10, o: 15 } }
+        };
+
+        // ================= CLASSES =================
+
+        class Resources {
+            constructor(money = 0, materials = 0, oil = 0) {
+                this.money = money;
+                this.materials = materials;
+                this.oil = oil;
+            }
+
+            add(other) {
+                this.money += other.money;
+                this.materials += other.materials;
+                this.oil += other.oil;
+                return this;
+            }
+
+            sub(other) {
+                this.money -= other.money;
+                this.materials -= other.materials;
+                this.oil -= other.oil;
+                return this;
+            }
+
+            canAfford(cost) {
+                return this.money >= cost.money && this.materials >= cost.materials && this.oil >= cost.oil;
+            }
+        }
+
+        class Building {
+            constructor(type, level = 1) {
+                this.type = type;
+                this.level = level;
+                this.active = true;
+            }
+
+            get data() { return BuildingData[this.type]; }
+
+            getUpgradeCost() {
+                const c = this.data.build;
+                return new Resources(c.m * this.level, c.mt * this.level, c.o * this.level);
+            }
+
+            getMaintenance() {
+                const c = this.data.maint;
+                return new Resources(c.m * this.level, c.mt * this.level, c.o * this.level);
+            }
+        }
+
+        class Region {
+            constructor(id, x, y, terrain) {
+                this.id = id;
+                this.x = x; // Center X
+                this.y = y; // Center Y
+                this.terrain = terrain;
+                this.owner = null;
+                this.buildings = [];
+                this.troops = 0;
+                this.neighbors = new Set();
+                this.mineLevel = [TerrainType.RARE_EARTH_MINE, TerrainType.MATERIAL_MINE, TerrainType.OIL_RIG].includes(terrain) ? 1 : 0;
+                this.polygon = []; // Array of [x, y] coordinates
+            }
+
+            hasBuilding(type) {
+                return this.buildings.some(b => b.type === type);
+            }
+
+            getBuilding(type) {
+                return this.buildings.find(b => b.type === type);
+            }
+        }
+
+        class Player {
+            constructor(id, name, color, hqRegion) {
+                this.id = id;
+                this.name = name;
+                this.color = color;
+                this.hqRegion = hqRegion;
+                this.supplySource = hqRegion;
+                this.resources = new Resources(500, 300, 200);
+                this.morale = 100.0;
+                this.propagandaLevel = 0; // Starts at 0, can go to 5
+
+                this.actions = []; // Queue for current turn actions
+
+                this.equipmentStrength = 100;
+
+                // Espionage system
+                this.espionageActive = false;      // Can currently see enemy stats?
+                this.espionageCooldown = 0;        // Turns until espionage available again
+            }
+        }
+
+        class GameMap {
+            constructor(width, height) {
+                this.width = width;
+                this.height = height;
+                this.regions = {};
+                this.rivers = []; // Array of {p1: [x,y], p2: [x,y]}
+                this.bridges = []; // Array of {p1: [x,y], p2: [x,y]}
+                this.delaunay = null;
+                this.voronoi = null;
+                // this.generate(); // Defer generation to Game setup or Sync
+            }
+
+            generate() {
+                // 1. Generate Random Seeds
+                const points = [];
+                for (let i = 0; i < CONSTANTS.NUM_REGIONS; i++) {
+                    points.push([
+                        Math.random() * this.width,
+                        Math.random() * this.height
+                    ]);
+                }
+
+                // 2. Compute Voronoi using D3
+                // We use relaxation (1 pass) to make regions slightly more regular
+                let delaunay = d3.Delaunay.from(points);
+                let voronoi = delaunay.voronoi([0, 0, this.width, this.height]);
+
+                // Relaxation
+                for (let i = 0; i < points.length; i++) {
+                    const polygon = voronoi.cellPolygon(i);
+                    if (polygon) {
+                        const [cx, cy] = d3.polygonCentroid(polygon);
+                        points[i] = [cx, cy];
+                    }
+                }
+
+                this.delaunay = d3.Delaunay.from(points);
+                this.voronoi = this.delaunay.voronoi([0, 0, this.width, this.height]);
+
+                // 3. Create Regions & Rivers
+                // Generate logic for rivers: Simple pathfinding from edge to edge or random walks
+
+                // Identify edges (shared boundaries)
+                // We can't easily get edges from D3 Voronoi directly without iteration.
+                // Simple River: Pick a random start edge, walk along Voronoi edges.
+                // For simplicity in this version, we'll mark *Regions* as having a river on a shared edge? 
+                // Or just draw rivers separately.
+
+                // Let's generate terrain first
+                for (let i = 0; i < points.length; i++) {
+                    const polygon = this.voronoi.cellPolygon(i);
+                    if (!polygon) continue;
+
+                    const cx = points[i][0];
+                    const cy = points[i][1];
+
+                    // Terrain Generation
+                    const rand = Math.random();
+                    let terrain = TerrainType.NORMAL;
+                    if (rand < 0.10) terrain = TerrainType.IMPASSABLE; // Slightly more mountains
+                    else if (rand < 0.25) terrain = TerrainType.FOREST; // 15% Forest
+                    else if (rand < 0.29) terrain = TerrainType.RARE_EARTH_MINE;
+                    else if (rand < 0.33) terrain = TerrainType.MATERIAL_MINE;
+                    else if (rand < 0.37) terrain = TerrainType.OIL_RIG;
+
+                    const region = new Region(i, cx, cy, terrain);
+                    region.polygon = polygon;
+                    this.regions[i] = region;
+                }
+
+                console.log('[MAP] Generated', Object.keys(this.regions).length, 'regions');
+
+                // 4. Compute Neighbors & Rivers
+                for (let i = 0; i < points.length; i++) {
+                    if (!this.regions[i]) continue;
+                    for (let n of this.voronoi.neighbors(i)) {
+                        if (this.regions[n] && this.regions[n].terrain !== TerrainType.IMPASSABLE) {
+                            this.regions[i].neighbors.add(n);
+                        }
+                    }
+                }
+
+                // Simple River Generation (Visual Only for now, maybe defensive bonus later?)
+                // Pick random starting points
+                const riverCount = 0;
+
+                for (let r = 0; r < riverCount; r++) {
+                    let startNode = Math.floor(Math.random() * points.length);
+                    let len = 0;
+                    let curr = startNode;
+                    let visited = new Set([curr]);
+
+                    while (len < 10) {
+                        const neighbors = Array.from(this.voronoi.neighbors(curr));
+                        const next = neighbors.find(n => !visited.has(n));
+                        if (!next) break;
+
+                        // The river runs BETWEEN curr and next.
+                        // Find the shared edge. 
+                        // D3 doesn't give shared edge easily, but we can approximate midpoint of the two centers?
+                        // Better: Voronoi edges are orthogonal to Delaunay edges.
+                        // The shared edge is the Voronoi boundary.
+                        // For visual simplicity, let's just generate a splashy curve *through* the voronoi vertices? 
+                        // Too complex.
+
+                        // Easier: A river is just a collection of shared borders.
+                        // But we want to render it. The shared border is a specific line segment.
+                        // Let's find the common vertices of the two polygons.
+
+                        const polyA = this.regions[curr].polygon;
+                        const polyB = this.regions[next].polygon;
+
+                        // Find shared vertices (approximate due to floats)
+                        const shared = [];
+                        for (let pa of polyA) {
+                            for (let pb of polyB) {
+                                const dist = Math.hypot(pa[0] - pb[0], pa[1] - pb[1]);
+                                if (dist < 1) shared.push(pa);
+                            }
+                        }
+
+                        // If we have 2 shared vertices, that's the edge.
+                        if (shared.length >= 2) {
+                            this.rivers.push({ p1: shared[0], p2: shared[1] });
+
+                            // Add a Bridge? 20% chance if not impassable
+                            if (this.regions[curr].terrain !== TerrainType.IMPASSABLE &&
+                                this.regions[next].terrain !== TerrainType.IMPASSABLE &&
+                                Math.random() < 0.3) {
+                                this.bridges.push({ p1: shared[0], p2: shared[1] });
+                            }
+                        }
+
+                        visited.add(next);
+                        curr = next;
+                        len++;
+                    }
+                }
+            }
+
+            getSupplyPath(source, target, pid) {
+                if (source === target) return [source];
+                const queue = [[source, [source]]];
+                const visited = new Set([source]);
+
+                while (queue.length > 0) {
+                    const [curr, path] = queue.shift();
+                    if (curr === target) return path;
+
+                    if (this.regions[curr]) {
+                        for (let nid of this.regions[curr].neighbors) {
+                            if (this.regions[nid] && this.regions[nid].owner === pid && !visited.has(nid)) {
+                                visited.add(nid);
+                                queue.push([nid, [...path, nid]]);
+                            }
+                        }
+                    }
+                }
+                return [];
+            }
+
+            hasSupplyLine(source, target, pid) {
+                return this.getSupplyPath(source, target, pid).length > 0;
+            }
+
+            calculateControl(rid, pid) {
+                const region = this.regions[rid];
+                if (!region) return 0;
+                let control = (region.owner === pid) ? 100.0 : 0.0;
+
+                // Adjacent Camps
+                for (let nid of region.neighbors) {
+                    const n = this.regions[nid];
+                    if (n.owner === pid) {
+                        const camp = n.getBuilding(BuildingType.MILITARY_CAMP);
+                        if (camp && camp.active) control += camp.level * 10;
+                    }
+                }
+
+                // Artillery & Snipers (Distance based on Euclidean or Graph hops? Using graph hops is safer for irregular map)
+                // Let's use simple distance check for efficiency
+                for (let rKey in this.regions) {
+                    const r = this.regions[rKey];
+                    if (r.owner === pid) {
+                        // Approximate distance using coordinate math for irregular map
+                        const dist = Math.hypot(region.x - r.x, region.y - r.y);
+                        // Assume range in pixels. Standard region width is approx sqrt(Area). 
+                        // Approx cell diameter ~ 100px given map size 900x700 / 50 regions
+                        const rangeUnit = 100;
+
+                        const art = r.getBuilding(BuildingType.ARTILLERY);
+                        if (art && art.active && dist <= rangeUnit * 2.5) control += art.level * 12;
+
+                        const snp = r.getBuilding(BuildingType.SNIPER_TOWER);
+                        if (snp && snp.active && dist <= rangeUnit * 1.5) control += snp.level * 8;
+                    }
+                }
+
+                // Penalty removed to allow attrition from small sources
+                // if (region.owner !== null && region.owner !== pid) {
+                //     control = Math.max(0, control - 50);
+                // }
+
+                return Math.min(100.0, control);
+            }
+        }
+
+        class Game {
+            constructor() {
+                this.map = new GameMap(CONSTANTS.MAP_WIDTH, CONSTANTS.MAP_HEIGHT);
+                this.players = {};
+                this.turn = 0;
+                this.currentPlayer = 1;
+                this.queuedActions = { 1: [], 2: [] };
+                this.battleLog = [];
+                this.battleReports = []; // Detailed battle history for battles tab
+                this.animations = [];
+                this.winner = null;
+                this.hqMoveCooldown = { 1: 0, 2: 0 }; // Turns until HQ can move again
+
+                // Replay system state
+                this.replayMode = false;
+                this.replayActions = [];      // Actions to replay sequentially
+                this.replayIndex = 0;         // Current action being shown
+                this.replaySpeed = 1000;      // ms between actions (1x speed)
+                this.replayTimer = null;      // Timer reference for cleanup
+                this.pendingReplayData = null; // Stores state to apply after replay
+                this.cinematicsEnabled = true; // Player preference for showing cinematics
+
+                // this.setup(); // Don't auto setup. NetworkManager handles it based on role.
+            }
+
+            setup() {
+                // Find regions closest to top-left and bottom-right
+                const p1r = this.map.delaunay.find(0, 0);
+                const p2r = this.map.delaunay.find(CONSTANTS.MAP_WIDTH, CONSTANTS.MAP_HEIGHT);
+
+                // Ensure valid start
+                let validP1 = p1r;
+                let validP2 = p2r;
+
+                // Simple fallback if impassable (BFS to find nearest valid)
+                // For simplicity, just reroll map in real game, but here just use as is or force normal terrain
+                if (this.map.regions[validP1].terrain === TerrainType.IMPASSABLE) this.map.regions[validP1].terrain = TerrainType.NORMAL;
+                if (this.map.regions[validP2].terrain === TerrainType.IMPASSABLE) this.map.regions[validP2].terrain = TerrainType.NORMAL;
+
+                this.players[1] = new Player(1, "Blue Forces", CONSTANTS.COLORS.P1, validP1);
+                this.players[2] = new Player(2, "Red Forces", CONSTANTS.COLORS.P2, validP2);
+
+                [1, 2].forEach(pid => {
+                    const r = this.map.regions[this.players[pid].hqRegion];
+                    r.owner = pid;
+                    r.troops = 150;
+                    r.buildings.push(new Building(BuildingType.HEADQUARTERS));
+                });
+
+                this.log("Game Started. Turn 1.");
+                ScenarioEditor.init(this);
+            }
+
+            log(msg) {
+                this.battleLog.push(msg);
+                // Pass 'this' because 'game' variable might not be initialized yet during setup
+                updateLogUI(this);
+            }
+
+            endTurn() {
+                if (this.isMultiplayer) {
+                    if (this.myPlayerId === 2) { // Client
+                        this.network.submitActions(this.players[2].actions);
+                        this.log("Actions Sent. Waiting for Host...");
+                    } else if (this.myPlayerId === 1) { // Host
+                        this.hostActions = [...this.players[1].actions]; // Copy
+                        this.checkTurnReady();
+                    }
+                } else {
+                    // Single player - use replay flow with action priority sorting
+                    const actions = this.players[this.currentPlayer].actions.map(a => ({
+                        pid: this.currentPlayer,
+                        action: a
+                    }));
+
+                    // Sort actions by priority: moves first, then builds/upgrades, then attacks
+                    const actionPriority = {
+                        'move': 1,
+                        'build': 2,
+                        'upgrade': 2,
+                        'propaganda_upgrade': 2,
+                        'move_hq': 2,
+                        'attack': 3
+                    };
+
+                    this.replayActions = actions.sort((a, b) => {
+                        const priorityA = actionPriority[a.action.type] || 2;
+                        const priorityB = actionPriority[b.action.type] || 2;
+                        return priorityA - priorityB;
+                    });
+                    this.players[this.currentPlayer].actions = [];
+
+                    if (this.replayActions.length > 0) {
+                        if (this.cinematicsEnabled) {
+                            // Show replay modal for user to choose
+                            this.replayIndex = 0;
+                            document.getElementById('replay-modal').style.display = 'flex';
+                        } else {
+                            // Cinematics disabled - execute immediately
+                            this.replayActions.forEach(item => {
+                                this.doAction(item.pid, item.action);
+                            });
+                            this.replayActions = [];
+                            this.nextTurn();
+                        }
+                    } else {
+                        this.nextTurn();
+                    }
+                }
+            }
+
+            // Single-player finalize turn after replay
+            singlePlayerFinalizeTurn() {
+                this.nextTurn();
+            }
+
+            collectResources(pid) {
+                const p = this.players[pid];
+                let budget = new Resources(BALANCE.BASE_INCOME.money, BALANCE.BASE_INCOME.materials, BALANCE.BASE_INCOME.oil);
+
+                // HQ
+                const hqR = this.map.regions[p.hqRegion];
+                const hq = hqR.getBuilding(BuildingType.HEADQUARTERS);
+                if (hq) budget.add(new Resources(
+                    hq.level * BALANCE.HQ_INCOME_PER_LEVEL.money,
+                    hq.level * BALANCE.HQ_INCOME_PER_LEVEL.materials,
+                    hq.level * BALANCE.HQ_INCOME_PER_LEVEL.oil
+                ));
+
+                // Territory
+                let terrCount = 0;
+                Object.values(this.map.regions).forEach(r => {
+                    if (r.owner === p.id) {
+                        terrCount++;
+                        if (this.map.hasSupplyLine(p.supplySource, r.id, p.id)) {
+                            if (r.terrain === TerrainType.RARE_EARTH_MINE) budget.money += r.mineLevel * BALANCE.MINE_INCOME_PER_LEVEL;
+                            if (r.terrain === TerrainType.MATERIAL_MINE) budget.materials += r.mineLevel * BALANCE.MATERIAL_INCOME_PER_LEVEL;
+                            if (r.terrain === TerrainType.OIL_RIG) budget.oil += r.mineLevel * BALANCE.OIL_INCOME_PER_LEVEL;
+                        }
+                    }
+                });
+                budget.add(new Resources(terrCount * 5, terrCount * 2, terrCount * 2));
+
+                p.resources.add(budget);
+                this.log(`P${p.id} collected: $${budget.money} M${budget.materials} O${budget.oil}`);
+            }
+
+
+
+
+
+
+            nextTurn() {
+                // ... (Original nextTurn logic, might need to find where it is)
+                // Assuming nextTurn handles economy and switching players.
+                // Replaced logic:
+                const prev = this.currentPlayer;
+                this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+                this.turn++;
+
+                this.collectResources(this.currentPlayer);
+                this.applyControl();
+                this.payMaintenance();
+                this.reinforcements();
+                this.propaganda();
+                this.processEspionageCooldowns();
+                this.processHQMoveCooldowns();
+                this.checkWin();
+
+                // Clear animations
+                this.battleLog.push(`--- Turn ${this.turn + 1} ---`);
+
+                // Reset actions for new player (just in case)
+                this.players[this.currentPlayer].actions = [];
+            }
+
+            processHQMoveCooldowns() {
+                // Decrement HQ move cooldowns for both players each turn
+                for (let pid of [1, 2]) {
+                    if (this.hqMoveCooldown[pid] > 0) {
+                        this.hqMoveCooldown[pid]--;
+                    }
+                }
+            }
+
+            queueAction(pid, action) {
+                const p = this.players[pid];
+
+                // Validation checks depending on action type
+                if (action.type === 'move' || action.type === 'attack') {
+                    const r = this.map.regions[action.from];
+                    const committed = this.getCommittedTroops(pid, action.from);
+                    if (r.troops - committed < action.troops) {
+                        alert("Not enough uncommitted troops!");
+                        return;
+                    }
+
+                    // Distance/Supply Check for Long Distance Move
+                    if (action.type === 'move') {
+                        const isNeighbor = r.neighbors.has(action.to);
+                        const hasSupply = this.map.hasSupplyLine(p.supplySource, action.to, pid);
+
+                        if (!isNeighbor && !hasSupply) {
+                            alert("Cannot move to unconnected region without supply line!");
+                            return;
+                        }
+
+                        // Oil Cost Check (Estimate)
+                        // Standard: 0.1 oil per troop
+                        // Long distance: 0.3 oil per troop?
+                        const costPerTroop = isNeighbor ? 0.1 : 0.3;
+                        const totalOil = action.troops * costPerTroop;
+
+                        // Check resources (Approximate, as resources change during turn)
+                        if (p.resources.oil < totalOil) {
+                            alert("Not enough oil for this move!");
+                            return;
+                        }
+                    }
+                }
+
+                p.actions.push(action);
+                this.log(`Action Queued: ${action.type}`);
+            }
+
+            cancelAction(pid, idx) {
+                // In multiplayer, allow my player to cancel; in single player, check currentPlayer
+                const myId = this.isMultiplayer ? this.myPlayerId : this.currentPlayer;
+                if (pid !== myId) return;
+                this.players[pid].actions.splice(idx, 1);
+                updateUI();
+            }
+
+            getCommittedTroops(pid, rid) {
+                const p = this.players[pid];
+                if (!p || !p.actions) return 0;
+                return p.actions
+                    .filter(a => (a.type === 'move' || a.type === 'attack') && a.from === rid)
+                    .reduce((sum, a) => sum + a.troops, 0);
+            }
+
+            processQueue() {
+                const p = this.players[this.currentPlayer];
+                p.actions.forEach(act => {
+                    this.doAction(this.currentPlayer, act);
+                });
+                p.actions = []; // Clear queue
+            }
+
+            doAction(pid, act) {
+                if (act.type === 'move') this.move(pid, act.from, act.to, act.troops);
+                if (act.type === 'attack') this.attack(pid, act.from, act.to, act.troops);
+                if (act.type === 'build') this.build(pid, act.region, act.building);
+                if (act.type === 'upgrade') this.upgrade(pid, act.region, act.building);
+                if (act.type === 'propaganda_upgrade') this.upgradePropaganda(pid);
+                if (act.type === 'move_hq') this.moveHQ(pid, act.toRegion);
+            }
+
+            move(pid, from, to, troops) {
+                const rf = this.map.regions[from];
+                const rt = this.map.regions[to];
+
+                if (rf.owner !== pid || rf.troops < troops) return;
+
+                // MEETING ENGAGEMENT CHECK
+                // If the target region was claimed by an enemy before we arrived (simultaneous arrival),
+                // this move becomes an attack immediately.
+                if (rt.owner !== null && rt.owner !== pid) {
+                    this.log(`P${pid}: Movement to Region ${to} intercepted! Engaging enemy.`);
+                    this.attack(pid, from, to, troops);
+                    return;
+                }
+
+                // Oil Cost Calculation (Adjusted logic)
+                const isNeighbor = rf.neighbors.has(to);
+                const oilCost = troops * (isNeighbor ? 0.1 : 0.3); // Higher cost for long distance
+
+                if (this.players[pid].resources.oil < oilCost) {
+                    this.log(`P${pid}: Not enough oil to move!`);
+                    return;
+                }
+
+                this.players[pid].resources.oil -= oilCost;
+                rf.troops -= troops;
+                rt.troops += troops;
+                if (rt.owner === null) rt.owner = pid;
+                this.log(`P${pid}: Moved ${troops} to Region ${to}`);
+            }
+
+            attack(pid, from, to, troops) {
+                const attacker = this.players[pid];
+                const rf = this.map.regions[from];
+                const rt = this.map.regions[to];
+                const defenderId = rt.owner;
+                const defender = defenderId ? this.players[defenderId] : null;
+
+                // Validate
+                if (rf.owner !== pid || rf.troops < troops) return;
+
+                // Oil cost for attack
+                const oilCost = troops * 0.2;
+                if (attacker.resources.oil < oilCost) {
+                    this.log(`P${pid}: Not enough oil for attack!`);
+                    return;
+                }
+
+                // Low morale check
+                let actualTroops = troops;
+                if (attacker.morale < 30) {
+                    actualTroops = Math.floor(troops / 2);
+                    this.log(`P${pid}: Low morale (<30%)! 50% of troops refuse to attack.`);
+                }
+                if (actualTroops <= 0) return;
+
+                // Deduct costs
+                attacker.resources.oil -= oilCost;
+                rf.troops -= troops;
+
+                // HANDLE UNDEFENDED REGION (no owner or 0 troops)
+                if (!defender || rt.troops <= 0) {
+                    // Automatic capture - minimal losses from Control attrition only
+                    const enemyControl = defender ? this.map.calculateControl(to, defenderId) : 0;
+                    const attritionLoss = Math.floor(actualTroops * (enemyControl / 500)); // Max 20% loss from control
+                    const survivors = Math.max(1, actualTroops - attritionLoss);
+
+                    const oldOwner = rt.owner;
+                    rt.owner = pid;
+                    rt.troops = survivors;
+
+                    // Store battle report
+                    this.battleReports.push({
+                        turn: this.turn,
+                        region: to,
+                        attacker: {
+                            pid: pid,
+                            name: attacker.name,
+                            troops: actualTroops,
+                            equipment: attacker.equipmentStrength,
+                            morale: attacker.morale,
+                            control: this.map.calculateControl(to, pid),
+                            power: actualTroops // Uncontested
+                        },
+                        defender: {
+                            pid: oldOwner,
+                            name: defender ? defender.name : 'Undefended',
+                            troops: 0,
+                            equipment: 0,
+                            morale: 0,
+                            control: enemyControl,
+                            power: 0
+                        },
+                        outcome: 'attacker',
+                        attackerCasualties: attritionLoss,
+                        defenderCasualties: 0,
+                        reason: 'Region was undefended'
+                    });
+
+                    if (oldOwner) this.recalculatePlayerStats(oldOwner);
+                    this.recalculatePlayerStats(pid);
+                    attacker.morale = Math.min(100, attacker.morale + 3);
+
+                    this.log(`P${pid}: Captured undefended Region ${to} (lost ${attritionLoss} to attrition)`);
+
+                    if (rt.hasBuilding(BuildingType.HEADQUARTERS)) {
+                        this.log(`🏛️ HQ CAPTURED! P${oldOwner} DEFEATED!`);
+                        this.gameOver = true;
+                        this.winner = pid;
+                        showVictory(pid);
+                    }
+
+                    this.animations.push({ type: 'battle', region: to, timer: 20 });
+                    return;
+                }
+
+                // CONTESTED BATTLE - Multiplicative Formula
+                const ac = this.map.calculateControl(to, pid);
+                const dc = this.map.calculateControl(to, defenderId);
+
+                // Calculate modifiers using BALANCE config
+                const aEquipMod = BALANCE.EQUIPMENT_BASE + (attacker.equipmentStrength / BALANCE.EQUIPMENT_DIVISOR);
+                const aMoraleMod = BALANCE.MORALE_BASE + (attacker.morale / BALANCE.MORALE_DIVISOR);
+                const aControlMod = BALANCE.CONTROL_BASE + (ac / BALANCE.CONTROL_DIVISOR);
+
+                const dEquipMod = BALANCE.EQUIPMENT_BASE + (defender.equipmentStrength / BALANCE.EQUIPMENT_DIVISOR);
+                const dMoraleMod = BALANCE.MORALE_BASE + (defender.morale / BALANCE.MORALE_DIVISOR);
+                const dControlMod = BALANCE.CONTROL_BASE + (dc / BALANCE.CONTROL_DIVISOR);
+
+                // Total power = troops * modifiers
+                const apow = actualTroops * aEquipMod * aMoraleMod * aControlMod;
+                const dpow = rt.troops * dEquipMod * dMoraleMod * dControlMod;
+
+                this.log(`BATTLE @ R${to}: P${pid}(${Math.floor(apow)}) vs P${defenderId}(${Math.floor(dpow)})`);
+                this.animations.push({ type: 'battle', region: to, timer: 20 });
+
+                // Build battle report
+                const battleReport = {
+                    turn: this.turn,
+                    region: to,
+                    attacker: {
+                        pid: pid,
+                        name: attacker.name,
+                        troops: actualTroops,
+                        equipment: attacker.equipmentStrength,
+                        equipmentMod: aEquipMod,
+                        morale: attacker.morale,
+                        moraleMod: aMoraleMod,
+                        control: ac,
+                        controlMod: aControlMod,
+                        power: apow
+                    },
+                    defender: {
+                        pid: defenderId,
+                        name: defender.name,
+                        troops: rt.troops,
+                        equipment: defender.equipmentStrength,
+                        equipmentMod: dEquipMod,
+                        morale: defender.morale,
+                        moraleMod: dMoraleMod,
+                        control: dc,
+                        controlMod: dControlMod,
+                        power: dpow
+                    },
+                    outcome: null,
+                    attackerCasualties: 0,
+                    defenderCasualties: 0,
+                    reason: ''
+                };
+
+                if (apow > dpow) {
+                    // ATTACKER WINS
+                    const powerRatio = apow / (apow + dpow);
+                    const survivalRate = 0.5 + (powerRatio * 0.5); // 50-100% survival based on dominance
+                    const survivors = Math.max(1, Math.floor(actualTroops * survivalRate));
+                    const aCasualties = actualTroops - survivors;
+
+                    const oldOwner = rt.owner;
+                    const dCasualties = rt.troops; // All defenders lost
+
+                    rt.owner = pid;
+                    rt.troops = survivors;
+
+                    this.recalculatePlayerStats(pid);
+                    this.recalculatePlayerStats(oldOwner);
+
+                    attacker.morale = Math.min(100, attacker.morale + 5);
+                    defender.morale = Math.max(0, defender.morale - (8 + actualTroops * 0.05));
+
+                    battleReport.outcome = 'attacker';
+                    battleReport.attackerCasualties = aCasualties;
+                    battleReport.defenderCasualties = dCasualties;
+                    battleReport.reason = `Attacker power (${Math.floor(apow)}) > Defender power (${Math.floor(dpow)})`;
+
+                    if (rt.hasBuilding(BuildingType.HEADQUARTERS)) {
+                        this.log(`🏛️ HQ DESTROYED! P${oldOwner} DEFEATED!`);
+                        this.gameOver = true;
+                        this.winner = pid;
+                        showVictory(pid);
+                    }
+
+                    this.log(`✓ ATTACKER WINS! Lost ${aCasualties}/${actualTroops} troops.`);
+                } else {
+                    // DEFENDER WINS
+                    const powerRatio = dpow / (apow + dpow);
+                    const survivalRate = 0.5 + (powerRatio * 0.5);
+                    const originalDefTroops = rt.troops;
+                    const survivors = Math.max(1, Math.floor(originalDefTroops * survivalRate));
+                    const dCasualties = originalDefTroops - survivors;
+
+                    rt.troops = survivors;
+
+                    defender.morale = Math.min(100, defender.morale + 12);
+                    attacker.morale = Math.max(0, attacker.morale - (10 + actualTroops * 0.05));
+
+                    battleReport.outcome = 'defender';
+                    battleReport.attackerCasualties = actualTroops; // All attackers lost
+                    battleReport.defenderCasualties = dCasualties;
+                    battleReport.reason = `Defender power (${Math.floor(dpow)}) >= Attacker power (${Math.floor(apow)})`;
+
+                    this.log(`✗ DEFENDER WINS! Def lost ${dCasualties}/${originalDefTroops}. Attackers wiped out.`);
+                }
+
+                this.battleReports.push(battleReport);
+            }
+
+            build(pid, rid, type) {
+                const r = this.map.regions[rid];
+                const p = this.players[pid];
+                if (r.owner !== pid) return;
+
+                const cost = BuildingData[type].build;
+                if (p.resources.canAfford(new Resources(cost.m, cost.mt, cost.o))) {
+                    p.resources.sub(new Resources(cost.m, cost.mt, cost.o));
+                    r.buildings.push(new Building(type));
+                    this.log(`P${pid}: Built ${BuildingData[type].name} at ${rid}`);
+                }
+            }
+
+            upgrade(pid, rid, type) {
+                const r = this.map.regions[rid];
+                const p = this.players[pid];
+                const b = r.getBuilding(type);
+                if (b) {
+                    const cost = b.getUpgradeCost();
+                    if (p.resources.canAfford(cost)) {
+                        p.resources.sub(cost);
+                        b.level++;
+                        this.log(`P${pid}: Upgraded ${BuildingData[type].name} to L${b.level}`);
+                        // Recalculate stats immediately to reflect upgrade
+                        this.recalculatePlayerStats(pid);
+                    }
+                }
+            }
+
+            applyControl() {
+                Object.values(this.map.regions).forEach(r => {
+                    if (r.owner !== null && r.troops > 0) {
+                        const enemyId = r.owner === 1 ? 2 : 1;
+                        const ctrl = this.map.calculateControl(r.id, enemyId);
+                        if (ctrl > 0) { // Threshold lowered from 10 to 0 to allow single units to inflict damage
+                            // Fixed amount + Percentage
+                            // Lower fixed damage slightly to avoid early game nuke if threshold is 0
+                            const fixedDmg = 3;
+                            // Scale percent dmg more gently
+                            const percentDmg = Math.floor(r.troops * (ctrl / 400));
+                            const loss = fixedDmg + percentDmg;
+
+                            if (loss > 0) {
+                                r.troops -= loss;
+                                this.players[r.owner].morale -= loss * 0.05;
+                                this.log(`R${r.id}: P${r.owner} loses ${loss} troops to attrition (Control: ${Math.floor(ctrl)}%)`);
+                            }
+                            if (r.troops < 0) r.troops = 0;
+                        }
+                    }
+                });
+            }
+
+            payMaintenance() {
+                Object.values(this.players).forEach(p => {
+                    const total = new Resources();
+                    const myBuildings = [];
+
+                    Object.values(this.map.regions).forEach(r => {
+                        if (r.owner === p.id) {
+                            r.buildings.forEach(b => {
+                                myBuildings.push(b);
+                                total.add(b.getMaintenance());
+                            });
+                        }
+                    });
+
+                    if (p.resources.canAfford(total)) {
+                        p.resources.sub(total);
+                        myBuildings.forEach(b => b.active = true);
+                    } else {
+                        this.log(`⚠️ P${p.id}: MAINTENANCE FAILURE! Buildings disabled.`);
+                        p.morale -= 15; // Severe penalty
+                        myBuildings.forEach(b => b.active = false);
+                    }
+
+                    this.recalculatePlayerStats(p.id);
+                });
+            }
+
+            recalculatePlayerStats(pid) {
+                const p = this.players[pid];
+                let es = 100; // Base ES
+
+                Object.values(this.map.regions).forEach(r => {
+                    if (r.owner === pid) {
+                        const armoury = r.getBuilding(BuildingType.ARMOURY);
+                        if (armoury && armoury.active) {
+                            es += armoury.level * 20;
+                        }
+                    }
+                });
+
+                p.equipmentStrength = es;
+            }
+
+            upgradePropaganda(pid) {
+                const p = this.players[pid];
+                if (p.propagandaLevel >= 5) return;
+
+                // Cost: Increases with level (e.g. 100, 200, 300...)
+                const costMoney = (p.propagandaLevel + 1) * 200;
+
+                if (p.resources.money >= costMoney) {
+                    p.resources.money -= costMoney;
+                    p.propagandaLevel++;
+                    this.log(`P${pid}: Upgraded Propaganda to Level ${p.propagandaLevel}`);
+                } else {
+                    this.log(`P${pid}: Not enough money to upgrade Propaganda ($${costMoney})`);
+                }
+            }
+
+            moveHQ(pid, toRegion) {
+                const p = this.players[pid];
+
+                // Check cooldown
+                if (this.hqMoveCooldown[pid] > 0) {
+                    this.log(`P${pid}: HQ relocation on cooldown (${this.hqMoveCooldown[pid]} turns remaining)`);
+                    return false;
+                }
+
+                // Check if target region is owned
+                const targetRegion = this.map.regions[toRegion];
+                if (!targetRegion || targetRegion.owner !== pid) {
+                    this.log(`P${pid}: Cannot move HQ to unowned region!`);
+                    return false;
+                }
+
+                // Check if target already has HQ
+                if (targetRegion.hasBuilding(BuildingType.HEADQUARTERS)) {
+                    this.log(`P${pid}: HQ is already at this location!`);
+                    return false;
+                }
+
+                // Check supply line connectivity
+                const currentHQRegion = p.hqRegion;
+                if (!this.map.hasSupplyLine(currentHQRegion, toRegion, pid)) {
+                    this.log(`P${pid}: No supply line to target region!`);
+                    return false;
+                }
+
+                // Check affordability using BALANCE config
+                if (p.resources.money < BALANCE.HQ_MOVE_COST_MONEY || p.resources.oil < BALANCE.HQ_MOVE_COST_OIL) {
+                    this.log(`P${pid}: Not enough resources to move HQ ($${BALANCE.HQ_MOVE_COST_MONEY} + ${BALANCE.HQ_MOVE_COST_OIL} Oil)`);
+                    return false;
+                }
+
+                // Perform the move
+                p.resources.money -= BALANCE.HQ_MOVE_COST_MONEY;
+                p.resources.oil -= BALANCE.HQ_MOVE_COST_OIL;
+
+                // Remove HQ from old region
+                const oldRegion = this.map.regions[currentHQRegion];
+                const hqIndex = oldRegion.buildings.findIndex(b => b.type === BuildingType.HEADQUARTERS);
+                if (hqIndex !== -1) {
+                    oldRegion.buildings.splice(hqIndex, 1);
+                }
+
+                // Add HQ to new region
+                targetRegion.buildings.push(new Building(BuildingType.HEADQUARTERS));
+                p.hqRegion = toRegion;
+                p.supplySource = toRegion;
+
+                // Set cooldown using BALANCE config
+                this.hqMoveCooldown[pid] = BALANCE.HQ_MOVE_COOLDOWN_TURNS;
+
+                this.log(`🏛️ P${pid}: Relocated HQ to Region ${toRegion} (Cooldown: ${BALANCE.HQ_MOVE_COOLDOWN_TURNS} turns)`);
+                return true;
+            }
+
+            activateEspionage(pid) {
+                const p = this.players[pid];
+                const ESPIONAGE_COST = 500;
+
+                // Check cooldown
+                if (p.espionageCooldown > 0) {
+                    this.log(`P${pid}: Espionage on cooldown (${p.espionageCooldown} turns remaining)`);
+                    return false;
+                }
+
+                // Check affordability
+                if (p.resources.money < ESPIONAGE_COST) {
+                    this.log(`P${pid}: Not enough money for Espionage ($${ESPIONAGE_COST} required)`);
+                    return false;
+                }
+
+                // Activate espionage
+                p.resources.money -= ESPIONAGE_COST;
+                p.espionageActive = true;
+                p.espionageCooldown = 3; // Will become 2 after this turn ends (decremented at turn end)
+                this.log(`P${pid}: 🕵️ Espionage activated! Enemy intel acquired.`);
+                updateUI();
+                return true;
+            }
+
+            processEspionageCooldowns() {
+                // Called at end of each turn
+                Object.values(this.players).forEach(p => {
+                    // Reset active flag after one turn
+                    p.espionageActive = false;
+                    // Decrement cooldown
+                    if (p.espionageCooldown > 0) {
+                        p.espionageCooldown--;
+                    }
+                });
+            }
+
+            propaganda() {
+                // Levels 0 to 5. 
+                // 0.3% per level? 
+                // User said: "starts with 0.3% per turn ... capped at 3% at level 5".
+                // Let's interpret: Level 1 = 0.6%, Level 2 = 1.2% ... Level 5 = 3.0%? (Step = 0.6)
+                // Effect = Level * 0.6.
+
+                const getEffect = (lvl) => lvl * 0.6;
+
+                const e1 = getEffect(this.players[1].propagandaLevel);
+                const e2 = getEffect(this.players[2].propagandaLevel);
+
+                const diff = e1 - e2;
+
+                if (diff > 0) {
+                    this.players[1].morale = Math.min(100, this.players[1].morale + diff);
+                    this.players[2].morale -= diff;
+                } else if (diff < 0) {
+                    this.players[2].morale = Math.min(100, this.players[2].morale + Math.abs(diff));
+                    this.players[1].morale -= Math.abs(diff);
+                }
+            }
+
+            reinforcements() {
+                Object.values(this.players).forEach(p => {
+                    const hqR = this.map.regions[p.hqRegion];
+                    if (hqR.owner === p.id) {
+                        let cap = 50;
+                        const hq = hqR.getBuilding(BuildingType.HEADQUARTERS);
+                        if (hq) cap += hq.level * 50;
+
+                        Object.values(this.map.regions).forEach(r => {
+                            if (r.owner === p.id) {
+                                const camp = r.getBuilding(BuildingType.MILITARY_CAMP);
+                                if (camp && camp.active) cap += camp.level * 30;
+                            }
+                        });
+
+                        const reinf = Math.min(50, cap);
+                        hqR.troops += reinf;
+                        this.log(`P${p.id}: +${reinf} reinforcements`);
+                    }
+                });
+            }
+
+            checkWin() {
+                Object.values(this.players).forEach(p => {
+                    if (p.morale < 20) {
+                        this.log(`P${p.id} COUP! Morale < 20%`);
+                        this.gameOver = true;
+                        this.winner = (p.id === 1) ? 2 : 1;
+                        showVictory(this.winner);
+                    }
+
+                    const total = Object.values(this.map.regions).filter(r => r.terrain !== TerrainType.IMPASSABLE).length;
+                    const owned = Object.values(this.map.regions).filter(r => r.owner === p.id).length;
+
+                    if (owned >= total * 0.8) {
+                        this.log(`P${p.id} Dominates Territory!`);
+                        this.gameOver = true;
+                        this.winner = p.id;
+                        showVictory(p.id);
+                    }
+                });
+            }
+
+            payMaintenance() {
+                Object.values(this.players).forEach(p => {
+                    const { maint } = this.calculateEconomy(p.id);
+                    if (maint.money > 0 || maint.materials > 0 || maint.oil > 0) {
+                        p.resources.sub(maint);
+                        this.log(`P${p.id} paid maintenance: $${maint.money} M${maint.materials} O${maint.oil}`);
+                    }
+                });
+            }
+
+            calculateEconomy(pid) {
+                const p = this.players[pid];
+                let income = new Resources(100, 50, 50); // Base income
+                let maint = new Resources(0, 0, 0);
+
+                // Calculate Income & Maintenance
+                const hqR = this.map.regions[p.hqRegion];
+                const hq = hqR.getBuilding(BuildingType.HEADQUARTERS);
+                if (hq) {
+                    income.add(new Resources(hq.level * 50, hq.level * 25, hq.level * 25));
+                    maint.add(hq.getMaintenance());
+                }
+
+                let terrCount = 0;
+                Object.values(this.map.regions).forEach(r => {
+                    if (r.owner === p.id) {
+                        terrCount++;
+                        // Income (if supplied)
+                        if (this.map.hasSupplyLine(p.supplySource, r.id, p.id)) {
+                            if (r.terrain === TerrainType.RARE_EARTH_MINE) income.money += r.mineLevel * 30;
+                            if (r.terrain === TerrainType.MATERIAL_MINE) income.materials += r.mineLevel * 20;
+                            if (r.terrain === TerrainType.OIL_RIG) income.oil += r.mineLevel * 25;
+                        }
+
+                        // Maintenance (for all buildings)
+                        r.buildings.forEach(b => {
+                            if (b.type !== BuildingType.HEADQUARTERS) { // HQ already handled
+                                maint.add(b.getMaintenance());
+                            }
+                        });
+                    }
+                });
+                income.add(new Resources(terrCount * 5, terrCount * 2, terrCount * 2));
+
+                return { income, maint };
+            }
+
+            getBudgetBreakdown(pid) {
+                const TROOP_WAGE = 1; // $1 per soldier per turn
+                const p = this.players[pid];
+
+                const breakdown = {
+                    income: {
+                        base: { money: 100, materials: 50, oil: 50 },
+                        territory: { count: 0, money: 0, materials: 0, oil: 0 },
+                        hq: null,
+                        mines: []
+                    },
+                    maintenance: {
+                        buildings: [],
+                        total: new Resources(0, 0, 0)
+                    },
+                    troops: {
+                        count: 0,
+                        wagePerSoldier: TROOP_WAGE,
+                        totalWage: 0
+                    },
+                    net: new Resources(0, 0, 0)
+                };
+
+                // Count territories and income
+                let terrCount = 0;
+                let totalTroops = 0;
+
+                Object.values(this.map.regions).forEach(r => {
+                    if (r.owner === pid) {
+                        terrCount++;
+                        totalTroops += r.troops;
+
+                        // Mine income (if supplied)
+                        if (this.map.hasSupplyLine(p.supplySource, r.id, pid)) {
+                            if (r.terrain === TerrainType.RARE_EARTH_MINE && r.mineLevel > 0) {
+                                breakdown.income.mines.push({
+                                    regionId: r.id,
+                                    type: 'RARE_EARTH',
+                                    level: r.mineLevel,
+                                    money: r.mineLevel * 30,
+                                    materials: 0,
+                                    oil: 0
+                                });
+                            }
+                            if (r.terrain === TerrainType.MATERIAL_MINE && r.mineLevel > 0) {
+                                breakdown.income.mines.push({
+                                    regionId: r.id,
+                                    type: 'MATERIAL',
+                                    level: r.mineLevel,
+                                    money: 0,
+                                    materials: r.mineLevel * 20,
+                                    oil: 0
+                                });
+                            }
+                            if (r.terrain === TerrainType.OIL_RIG && r.mineLevel > 0) {
+                                breakdown.income.mines.push({
+                                    regionId: r.id,
+                                    type: 'OIL',
+                                    level: r.mineLevel,
+                                    money: 0,
+                                    materials: 0,
+                                    oil: r.mineLevel * 25
+                                });
+                            }
+                        }
+
+                        // Building maintenance
+                        r.buildings.forEach(b => {
+                            const maint = b.getMaintenance();
+                            breakdown.maintenance.buildings.push({
+                                regionId: r.id,
+                                type: b.type,
+                                typeName: BuildingData[b.type].name,
+                                level: b.level,
+                                cost: { money: maint.money, materials: maint.materials, oil: maint.oil }
+                            });
+                            breakdown.maintenance.total.add(maint);
+                        });
+                    }
+                });
+
+                // Territory bonus
+                breakdown.income.territory = {
+                    count: terrCount,
+                    money: terrCount * 5,
+                    materials: terrCount * 2,
+                    oil: terrCount * 2
+                };
+
+                // HQ bonus
+                const hqR = this.map.regions[p.hqRegion];
+                const hq = hqR ? hqR.getBuilding(BuildingType.HEADQUARTERS) : null;
+                if (hq) {
+                    breakdown.income.hq = {
+                        regionId: p.hqRegion,
+                        level: hq.level,
+                        money: hq.level * 50,
+                        materials: hq.level * 25,
+                        oil: hq.level * 25
+                    };
+                }
+
+                // Troop wages
+                breakdown.troops.count = totalTroops;
+                breakdown.troops.totalWage = totalTroops * TROOP_WAGE;
+
+                // Calculate totals
+                let totalIncome = new Resources(
+                    breakdown.income.base.money + breakdown.income.territory.money + (breakdown.income.hq ? breakdown.income.hq.money : 0),
+                    breakdown.income.base.materials + breakdown.income.territory.materials + (breakdown.income.hq ? breakdown.income.hq.materials : 0),
+                    breakdown.income.base.oil + breakdown.income.territory.oil + (breakdown.income.hq ? breakdown.income.hq.oil : 0)
+                );
+                breakdown.income.mines.forEach(m => {
+                    totalIncome.money += m.money;
+                    totalIncome.materials += m.materials;
+                    totalIncome.oil += m.oil;
+                });
+
+                // Net = Income - Maintenance - Wages
+                breakdown.net = new Resources(
+                    totalIncome.money - breakdown.maintenance.total.money - breakdown.troops.totalWage,
+                    totalIncome.materials - breakdown.maintenance.total.materials,
+                    totalIncome.oil - breakdown.maintenance.total.oil
+                );
+
+                breakdown.income.total = totalIncome;
+
+                return breakdown;
+            }
+            // --- Network / Serialization Methods ---
+
+            serializeMap() {
+                const regions = {};
+                Object.values(this.map.regions).forEach(r => {
+                    regions[r.id] = {
+                        id: r.id,
+                        x: r.x, y: r.y,
+                        points: r.polygon,
+                        neighbors: Array.from(r.neighbors),
+                        terrain: r.terrain,
+                        owner: r.owner,
+                        troops: r.troops,
+                        mineLevel: r.mineLevel,
+                        buildings: r.buildings.map(b => ({ type: b.type, level: b.level }))
+                    };
+                });
+                return regions;
+            }
+
+            deserializeMap(regionsData) {
+                this.map.regions = {};
+                // Dummy Delaunay for click detection (Nearest Neighbor)
+                this.map.delaunay = {
+                    find: (x, y) => {
+                        let minDist = Infinity;
+                        let closest = null;
+                        Object.values(this.map.regions).forEach(r => {
+                            const dist = Math.hypot(r.x - x, r.y - y);
+                            if (dist < minDist) {
+                                minDist = dist;
+                                closest = r.id;
+                            }
+                        });
+                        return closest;
+                    }
+                };
+
+                Object.values(regionsData).forEach(d => {
+                    // Fix: Constructor is (id, x, y, terrain)
+                    const r = new Region(d.id, d.x, d.y, d.terrain);
+                    r.polygon = d.points; // Explicitly set polygon
+                    r.neighbors = new Set(d.neighbors);
+                    // r.terrain is already set by constructor
+                    r.owner = d.owner;
+                    r.troops = d.troops;
+                    r.mineLevel = d.mineLevel;
+                    r.buildings = [];
+                    d.buildings.forEach(b => {
+                        const newB = new Building(b.type);
+                        newB.level = b.level;
+                        r.buildings.push(newB);
+                    });
+                    this.map.regions[d.id] = r;
+                });
+            }
+
+            serializePlayers() {
+                const p = {};
+                Object.values(this.players).forEach(pl => {
+                    p[pl.id] = {
+                        id: pl.id,
+                        name: pl.name,
+                        color: pl.color,
+                        hqRegion: pl.hqRegion,
+                        supplySource: pl.supplySource,
+                        morale: pl.morale,
+                        propagandaLevel: pl.propagandaLevel,
+                        equipmentStrength: pl.equipmentStrength,
+                        espionageActive: pl.espionageActive,
+                        espionageCooldown: pl.espionageCooldown,
+                        resources: {
+                            money: pl.resources.money,
+                            materials: pl.resources.materials,
+                            oil: pl.resources.oil
+                        }
+                    };
+                });
+                return p;
+            }
+
+            deserializePlayers(pData) {
+                console.log("[CLIENT] Deserializing players:", Object.keys(pData));
+                this.players = {};
+                Object.values(pData).forEach(d => {
+                    const p = new Player(d.id, d.name, d.color, d.hqRegion);
+                    p.supplySource = d.supplySource;
+                    p.morale = d.morale;
+                    p.propagandaLevel = d.propagandaLevel;
+                    p.equipmentStrength = d.equipmentStrength;
+                    p.espionageActive = d.espionageActive || false;
+                    p.espionageCooldown = d.espionageCooldown || 0;
+                    p.resources = new Resources(d.resources.money, d.resources.materials, d.resources.oil);
+                    this.players[d.id] = p;
+                });
+            }
+
+            applyTurnUpdate(newState, battleLog) {
+                // Apply full region state from host
+                if (newState.regions) {
+                    newState.regions.forEach(u => {
+                        const r = this.map.regions[u.id];
+                        if (r) {
+                            r.owner = u.owner;
+                            r.troops = u.troops;
+                            // Sync buildings
+                            r.buildings = [];
+                            if (u.buildings) {
+                                u.buildings.forEach(b => {
+                                    const newB = new Building(b.type);
+                                    newB.level = b.level;
+                                    newB.active = b.active !== undefined ? b.active : true;
+                                    r.buildings.push(newB);
+                                });
+                            }
+                        }
+                    });
+                }
+
+                // Apply player state from host
+                if (newState.players) {
+                    Object.values(newState.players).forEach(pData => {
+                        const p = this.players[pData.id];
+                        if (p) {
+                            p.morale = pData.morale;
+                            p.propagandaLevel = pData.propagandaLevel;
+                            p.equipmentStrength = pData.equipmentStrength;
+                            p.espionageActive = pData.espionageActive || false;
+                            p.espionageCooldown = pData.espionageCooldown || 0;
+                            p.hqRegion = pData.hqRegion !== undefined ? pData.hqRegion : p.hqRegion;
+                            p.supplySource = pData.supplySource !== undefined ? pData.supplySource : p.supplySource;
+                            p.resources = new Resources(pData.resources.money, pData.resources.materials, pData.resources.oil);
+                        }
+                    });
+                }
+
+                // Apply turn number
+                if (newState.turn !== undefined) {
+                    this.turn = newState.turn;
+                }
+
+                // Sync battle reports from host - always sync the full array
+                if (newState.battleReports !== undefined) {
+                    this.battleReports = newState.battleReports || [];
+                }
+
+                // Sync HQ move cooldowns from host
+                if (newState.hqMoveCooldown) {
+                    this.hqMoveCooldown = newState.hqMoveCooldown;
+                }
+
+                // Add battle log entries
+                battleLog.forEach(log => {
+                    this.log(log);
+                });
+
+                // Clear my actions (they've been processed)
+                this.players[this.myPlayerId].actions = [];
+
+                // Redraw
+                this.draw();
+            }
+
+            checkTurnReady() {
+                if (this.hostActions && this.receivedClientActions) {
+                    this.resolveSimultaneousTurn();
+                } else {
+                    this.log("Waiting for other player...");
+                }
+            }
+
+            // Check if an action is visible to a specific player (fog of war for replay)
+            isActionVisibleToPlayer(action, actionPid, viewerPid) {
+                // Always see your own actions
+                if (actionPid === viewerPid) return true;
+
+                // Attacks are always visible (they affect your territory or are on the frontline)
+                if (action.type === 'attack') return true;
+
+                // For moves: visible if either the source or destination is adjacent to viewer's territory
+                if (action.type === 'move') {
+                    const fromRegion = this.map.regions[action.from];
+                    const toRegion = this.map.regions[action.to];
+
+                    // Check if 'from' region is adjacent to any of viewer's regions
+                    const isFromVisible = this.isRegionOnFrontline(action.from, viewerPid);
+                    // Check if 'to' region is adjacent to any of viewer's regions
+                    const isToVisible = this.isRegionOnFrontline(action.to, viewerPid);
+
+                    return isFromVisible || isToVisible;
+                }
+
+                // Builds, upgrades, propaganda, HQ moves in enemy territory are hidden unless on frontline
+                if (action.type === 'build' || action.type === 'upgrade') {
+                    return this.isRegionOnFrontline(action.region, viewerPid);
+                }
+
+                // HQ moves - visible if destination is on frontline
+                if (action.type === 'move_hq') {
+                    return this.isRegionOnFrontline(action.toRegion, viewerPid);
+                }
+
+                // Propaganda upgrades are hidden (happen globally, no region)
+                if (action.type === 'propaganda_upgrade') return false;
+
+                return false;
+            }
+
+            // Check if a region is on the frontline (adjacent to viewer's territory)
+            isRegionOnFrontline(regionId, viewerPid) {
+                const region = this.map.regions[regionId];
+                if (!region) return false;
+
+                // If viewer owns this region, it's visible
+                if (region.owner === viewerPid) return true;
+
+                // Check if any neighbor is owned by viewer
+                for (let neighborId of region.neighbors) {
+                    const neighbor = this.map.regions[neighborId];
+                    if (neighbor && neighbor.owner === viewerPid) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            // Filter replay actions for a specific viewer (fog of war)
+            filterReplayActionsForViewer(actions, viewerPid) {
+                return actions.filter(item =>
+                    this.isActionVisibleToPlayer(item.action, item.pid, viewerPid)
+                );
+            }
+
+            resolveSimultaneousTurn() {
+                // Collect all actions from both players
+                const allActions = [];
+
+                if (this.hostActions) {
+                    this.hostActions.forEach(a => {
+                        allActions.push({ pid: 1, action: a });
+                    });
+                }
+                if (this.receivedClientActions) {
+                    this.receivedClientActions.forEach(a => {
+                        allActions.push({ pid: 2, action: a });
+                    });
+                }
+
+                // Sort actions by priority: moves first, then builds/upgrades, then attacks
+                // This allows defensive reinforcement "traps" and strategic positioning
+                const actionPriority = {
+                    'move': 1,           // Moves resolve first (reinforcements arrive)
+                    'build': 2,          // Building/upgrades next
+                    'upgrade': 2,
+                    'propaganda_upgrade': 2,
+                    'move_hq': 2,
+                    'attack': 3          // Attacks resolve last (against reinforced positions)
+                };
+
+                const sortedActions = allActions.sort((a, b) => {
+                    const priorityA = actionPriority[a.action.type] || 2;
+                    const priorityB = actionPriority[b.action.type] || 2;
+                    return priorityA - priorityB;
+                });
+
+                // For HOST: Keep ALL actions but mark invisible ones as hidden
+                // This ensures state is updated correctly even for hidden moves
+                this.replayActions = sortedActions.map(item => {
+                    // Clone item to avoid modifying the one sent to client (though we serialize/clone later anyway)
+                    const visible = this.isActionVisibleToPlayer(item.action, item.pid, 1);
+                    // We modify the item directly since we are creating the list
+                    item.hidden = !visible;
+                    return item;
+                });
+
+                // Clear queues
+                this.players[1].actions = [];
+                this.players[2].actions = [];
+                this.hostActions = null;
+                this.receivedClientActions = null;
+
+                // SYNC REPLAY TO CLIENT (filtered for P2's view)
+                // Client only receives actions they can see. Hidden actions are omitted.
+                // Client state will be synced via turn_update at the end.
+                if (this.network && this.isMultiplayer) {
+                    const clientVisibleActions = this.filterReplayActionsForViewer(sortedActions, 2);
+                    this.network.syncReplayToClient(clientVisibleActions);
+                }
+
+                // If there are actions to replay
+                if (this.replayActions.length > 0) {
+                    if (this.cinematicsEnabled) {
+                        // Cinematics enabled - Start immediately (skip asking)
+                        this.startReplaySequence();
+                    } else {
+                        // Cinematics disabled - execute all immediately
+                        this.executeAllActionsInstantly();
+                    }
+                } else {
+                    // No actions - just finalize the turn
+                    this.finalizeTurn();
+                }
+            }
+
+            // Execute all actions instantly and finalize turn
+            executeAllActionsInstantly() {
+                this.replayActions.forEach(item => {
+                    this.doAction(item.pid, item.action);
+                });
+                this.replayActions = [];
+                this.finalizeTurn();
+            }
+
+            // Finalize turn after actions are executed
+            finalizeTurn() {
+                if (this.isMultiplayer) {
+                    // Multiplayer: Only host processes economy
+                    if (this.myPlayerId === 1) {
+                        [1, 2].forEach(pid => {
+                            this.collectResources(pid);
+                        });
+
+                        // Global phases
+                        this.applyControl();
+                        this.payMaintenance();
+                        this.reinforcements();
+                        this.propaganda();
+                        this.processEspionageCooldowns();
+                        this.processHQMoveCooldowns();
+                        this.checkWin();
+
+                        this.turn++;
+
+                        // Send update to client
+                        this.sendTurnUpdateToClient();
+                    }
+                    this.draw();
+                } else {
+                    // Single player: Use standard nextTurn
+                    this.nextTurn();
+                }
+            }
+
+            // Send serialized state to client
+            sendTurnUpdateToClient() {
+                // Serialize FULL Update for client
+                const update = {
+                    turn: this.turn,
+                    regions: Object.values(this.map.regions).map(r => ({
+                        id: r.id,
+                        owner: r.owner,
+                        troops: r.troops,
+                        buildings: r.buildings.map(b => ({ type: b.type, level: b.level, active: b.active }))
+                    })),
+                    players: {}
+                };
+
+                // Add player state
+                Object.values(this.players).forEach(p => {
+                    update.players[p.id] = {
+                        id: p.id,
+                        morale: p.morale,
+                        propagandaLevel: p.propagandaLevel,
+                        equipmentStrength: p.equipmentStrength,
+                        espionageActive: p.espionageActive,
+                        espionageCooldown: p.espionageCooldown,
+                        hqRegion: p.hqRegion,
+                        supplySource: p.supplySource,
+                        resources: {
+                            money: p.resources.money,
+                            materials: p.resources.materials,
+                            oil: p.resources.oil
+                        }
+                    };
+                });
+
+                // Include battle reports and HQ cooldowns in update
+                update.battleReports = this.battleReports;
+                update.hqMoveCooldown = this.hqMoveCooldown;
+
+                this.network.sendTurnUpdate(update, this.battleLog);
+            }
+
+            // Start the replay animation sequence
+            startReplaySequence() {
+                this.replayMode = true;
+                this.replayIndex = 0;
+                this.replaySpeed = parseInt(document.getElementById('replay-speed-select').value) || 1000;
+
+                document.getElementById('replay-modal').style.display = 'none';
+                document.getElementById('replay-overlay').style.display = 'block';
+
+                this.playNextReplayAction();
+            }
+
+            // Play the next action in the replay sequence
+            playNextReplayAction() {
+                // Fast-forward hidden actions
+                while (this.replayIndex < this.replayActions.length) {
+                    const item = this.replayActions[this.replayIndex];
+                    if (item.hidden) {
+                        // Execute hidden action immediately
+                        this.doAction(item.pid, item.action);
+                        this.replayIndex++;
+                    } else {
+                        // Found a visible action, stop fast-forwarding
+                        break;
+                    }
+                }
+
+                if (this.replayIndex >= this.replayActions.length) {
+                    // Replay finished
+                    this.endReplay();
+                    return;
+                }
+
+                const item = this.replayActions[this.replayIndex];
+                const action = item.action;
+                const player = this.players[item.pid];
+
+                // Determine current phase and update phase indicator
+                const phaseMove = document.getElementById('phase-move');
+                const phaseBuild = document.getElementById('phase-build');
+                const phaseAttack = document.getElementById('phase-attack');
+
+                // Reset all phase styles (with null checks)
+                const resetStyle = 'background: transparent; color: #888;';
+                const activeStyle = 'background: var(--accent-color); color: white; font-weight: bold;';
+                const completedStyle = 'background: rgba(100, 150, 100, 0.3); color: #6a6;';
+
+                if (phaseMove) phaseMove.style.cssText = resetStyle;
+                if (phaseBuild) phaseBuild.style.cssText = resetStyle;
+                if (phaseAttack) phaseAttack.style.cssText = resetStyle;
+
+                // Check if we're entering a new phase
+                const currentPhase = this.getActionPhase(action.type);
+                const previousPhase = this.replayIndex > 0
+                    ? this.getActionPhase(this.replayActions[this.replayIndex - 1].action.type)
+                    : null;
+
+                // Highlight current phase and mark completed phases
+                if (currentPhase === 'move') {
+                    if (phaseMove) phaseMove.style.cssText = activeStyle;
+                } else if (currentPhase === 'build') {
+                    if (phaseMove) phaseMove.style.cssText = completedStyle;
+                    if (phaseBuild) phaseBuild.style.cssText = activeStyle;
+                } else if (currentPhase === 'attack') {
+                    if (phaseMove) phaseMove.style.cssText = completedStyle;
+                    if (phaseBuild) phaseBuild.style.cssText = completedStyle;
+                    if (phaseAttack) phaseAttack.style.cssText = activeStyle;
+                }
+
+                // Show phase transition announcement
+                if (previousPhase !== currentPhase && currentPhase !== null) {
+                    const phaseNames = {
+                        'move': '🚚 MOVEMENT PHASE',
+                        'build': '🔨 CONSTRUCTION PHASE',
+                        'attack': '⚔️ COMBAT PHASE'
+                    };
+                    this.log(`--- ${phaseNames[currentPhase]} ---`);
+                }
+
+                // Update overlay text
+                let actionText = '';
+                if (action.type === 'move') {
+                    actionText = `${player.name}: Moving ${action.troops} troops to Region ${action.to}`;
+                } else if (action.type === 'attack') {
+                    actionText = `${player.name}: Attacking Region ${action.to} with ${action.troops} troops!`;
+                } else if (action.type === 'build') {
+                    actionText = `${player.name}: Constructing ${BuildingData[action.building].name}`;
+                } else if (action.type === 'upgrade') {
+                    actionText = `${player.name}: Upgrading building at Region ${action.region}`;
+                } else if (action.type === 'propaganda_upgrade') {
+                    actionText = `${player.name}: Upgrading Propaganda`;
+                } else if (action.type === 'move_hq') {
+                    actionText = `${player.name}: Relocating Headquarters to Region ${action.toRegion}`;
+                }
+
+                document.getElementById('replay-action-text').innerText = actionText;
+                document.getElementById('replay-progress').innerText = `Action ${this.replayIndex + 1} of ${this.replayActions.length}`;
+
+                // Set up animation for this action
+                this.currentReplayAction = item;
+                this.replayAnimationStart = Date.now();
+
+                // Execute the actual action
+                this.doAction(item.pid, action);
+                this.draw();
+
+                // Schedule next action
+                this.replayIndex++;
+                this.replayTimer = setTimeout(() => {
+                    this.playNextReplayAction();
+                }, this.replaySpeed);
+            }
+
+            // Helper to determine action phase
+            getActionPhase(actionType) {
+                if (actionType === 'move') return 'move';
+                if (actionType === 'attack') return 'attack';
+                return 'build'; // build, upgrade, propaganda_upgrade, move_hq
+            }
+
+            // End the replay and finalize turn
+            endReplay() {
+                this.replayMode = false;
+                this.replayActions = [];
+                this.currentReplayAction = null;
+
+                if (this.replayTimer) {
+                    clearTimeout(this.replayTimer);
+                    this.replayTimer = null;
+                }
+
+                document.getElementById('replay-overlay').style.display = 'none';
+
+                // Client doesn't finalize - waits for turn_update from host
+                if (this.isMultiplayer && this.myPlayerId !== 1) {
+                    this.log("Waiting for host to finalize turn...");
+                    this.draw();
+                    return;
+                }
+
+                this.finalizeTurn();
+            }
+
+            // Skip replay and execute all remaining actions instantly
+            skipReplaySequence() {
+                this.replayMode = false;
+
+                if (this.replayTimer) {
+                    clearTimeout(this.replayTimer);
+                    this.replayTimer = null;
+                }
+
+                document.getElementById('replay-modal').style.display = 'none';
+                document.getElementById('replay-overlay').style.display = 'none';
+
+                // Execute any remaining actions
+                for (let i = this.replayIndex; i < this.replayActions.length; i++) {
+                    const item = this.replayActions[i];
+                    this.doAction(item.pid, item.action);
+                }
+
+                this.replayActions = [];
+                this.currentReplayAction = null;
+
+                // Client doesn't finalize - waits for turn_update from host
+                if (this.isMultiplayer && this.myPlayerId !== 1) {
+                    this.log("Waiting for host to finalize turn...");
+                    this.draw();
+                    return;
+                }
+
+                this.finalizeTurn();
+            }
+
+            // CLIENT: Receive replay sync from host and play the same replay
+            receiveReplaySync(replayActions) {
+                console.log('[CLIENT] Received replay sync with', replayActions.length, 'actions');
+
+                // Store the replay actions
+                this.replayActions = replayActions;
+
+                // Clear player actions (client doesn't process them, just watches)
+                this.players[1].actions = [];
+                this.players[2].actions = [];
+
+                // If there are actions to replay
+                if (this.replayActions.length > 0) {
+                    if (this.cinematicsEnabled) {
+                        // Cinematics enabled - Start immediately (skip asking)
+                        this.startReplaySequence();
+                    } else {
+                        // Cinematics disabled - execute all immediately
+                        this.executeAllActionsInstantly();
+                    }
+                } else {
+                    // No actions - wait for turn update from host
+                    this.log("No actions this turn.");
+                }
+            }
+
+            // Method to trigger render (for multiplayer sync)
+            draw() {
+                if (this.renderer) this.renderer.draw();
+                updateUI();
+            }
+
+            // Method to start game loop (called by client after sync)
+            loop() {
+                if (this.renderer) {
+                    // Renderer already has its own loop, just ensure it's running
+                    this.renderer.draw();
+                }
+                updateUI();
+                document.getElementById('multiplayer-modal').style.display = 'none';
+                document.getElementById('ui-panel').style.display = 'flex';
+            }
+        }
+
+        // ================= RENDERER =================
+
+        class Renderer {
+            constructor(game) {
+                this.game = game;
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.showControl = false;
+                this.showSupply = true;
+                this.selectedRegion = null;
+                this.hoverRegion = null;
+
+                // Load Tree Model
+                this.treeImage = new Image();
+                this.treeImage.src = 'Models/tree.png';
+
+                // Paper Texture setup
+                this.paperPattern = null;
+                this.hatchPattern = null;
+
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+
+                this.canvas.addEventListener('mousemove', e => this.handleMouseMove(e));
+                this.canvas.addEventListener('mousedown', e => this.handleClick(e));
+
+                this.createPatterns();
+
+                // Animation loop
+                this.loop = this.loop.bind(this);
+                requestAnimationFrame(this.loop);
+            }
+
+            createPatterns() {
+                // 1. Paper Grain
+                const pCan = document.createElement('canvas');
+                pCan.width = 128; // Smaller repeating pattern
+                pCan.height = 128;
+                const pCtx = pCan.getContext('2d');
+
+                // Fill Base
+                pCtx.fillStyle = '#e6dcc3';
+                pCtx.fillRect(0, 0, 128, 128);
+
+                // Add Noise
+                for (let i = 0; i < 400; i++) {
+                    pCtx.fillStyle = `rgba(139, 69, 19, ${Math.random() * 0.05})`; // Brownish noise
+                    pCtx.fillRect(Math.random() * 128, Math.random() * 128, 2, 2);
+                }
+                // Add Stains
+                for (let i = 0; i < 3; i++) {
+                    pCtx.beginPath();
+                    pCtx.arc(Math.random() * 128, Math.random() * 128, Math.random() * 20 + 10, 0, Math.PI * 2);
+                    pCtx.fillStyle = `rgba(139, 69, 19, 0.03)`;
+                    pCtx.fill();
+                }
+
+                this.paperPattern = this.ctx.createPattern(pCan, 'repeat');
+
+                // 2. Crosshatch for Impassable
+                const hCan = document.createElement('canvas');
+                hCan.width = 20;
+                hCan.height = 20;
+                const hCtx = hCan.getContext('2d');
+                hCtx.strokeStyle = 'rgba(80, 70, 60, 0.3)';
+                hCtx.lineWidth = 1;
+                hCtx.beginPath();
+                hCtx.moveTo(0, 20);
+                hCtx.lineTo(20, 0);
+                hCtx.stroke();
+
+                this.hatchPattern = this.ctx.createPattern(hCan, 'repeat');
+            }
+
+            resize() {
+                this.canvas.width = CONSTANTS.MAP_WIDTH + CONSTANTS.OFFSET_X * 2;
+                this.canvas.height = CONSTANTS.MAP_HEIGHT + CONSTANTS.OFFSET_Y * 2;
+                // Re-create patterns if context resets (rare in resize but safer)
+                this.createPatterns();
+            }
+
+            // ... mouse handlers ...
+
+            handleMouseMove(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left - CONSTANTS.OFFSET_X;
+                const y = e.clientY - rect.top - CONSTANTS.OFFSET_Y;
+
+                // Use D3 Delaunay for fast hit detection on irregular polygons
+                if (x >= 0 && x <= CONSTANTS.MAP_WIDTH && y >= 0 && y <= CONSTANTS.MAP_HEIGHT) {
+                    this.hoverRegion = this.game.map.delaunay.find(x, y);
+                } else {
+                    this.hoverRegion = null;
+                }
+            }
+
+            handleClick(e) {
+                if (e.button !== 0) return;
+
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left - CONSTANTS.OFFSET_X;
+                const y = e.clientY - rect.top - CONSTANTS.OFFSET_Y;
+
+                let clickedId = null;
+                if (x >= 0 && x <= CONSTANTS.MAP_WIDTH && y >= 0 && y <= CONSTANTS.MAP_HEIGHT) {
+                    clickedId = this.game.map.delaunay.find(x, y);
+                } else {
+                    this.selectedRegion = null;
+                    updateSelectionUI(null);
+                    return;
+                }
+
+                const region = this.game.map.regions[clickedId];
+
+                // FOG OF WAR CHECK
+                // In multiplayer, use myPlayerId; in single player, use currentPlayer
+                const myId = this.game.isMultiplayer ? this.game.myPlayerId : this.game.currentPlayer;
+                const isVisible = (r) => {
+                    if (r.owner === myId) return true;
+                    for (let nid of r.neighbors) {
+                        const neighbor = this.game.map.regions[nid];
+                        if (neighbor && neighbor.owner === myId) return true;
+                    }
+                    return false;
+                };
+
+                // Check if Scenario Editor is active (Debug Mode)
+                // Use typeof check to avoid ReferenceError if ScenarioEditor is not defined on window
+                const debugMode = (typeof ScenarioEditor !== 'undefined' && ScenarioEditor.isVisible);
+
+                if (region && !isVisible(region) && !debugMode) {
+                    this.selectedRegion = null;
+                    updateSelectionUI(null);
+                    return;
+                }
+
+                updateSelectionUI(region);
+
+                if (this.selectedRegion === null) {
+                    if (region.owner === myId || debugMode) {
+                        this.selectedRegion = clickedId;
+                    } else {
+                        this.selectedRegion = null;
+                    }
+                } else {
+                    const sourceRegion = this.game.map.regions[this.selectedRegion];
+
+                    if (clickedId === this.selectedRegion) {
+                        this.selectedRegion = null;
+                        updateSelectionUI(region);
+                    } else if (sourceRegion.neighbors.has(clickedId)) {
+                        // SCENARIO MODE: Priority to Select (to edit) instead of Move
+                        if (debugMode) {
+                            this.selectedRegion = clickedId;
+                        } else if (region.owner === null || region.owner === myId) {
+                            openActionModal('move', this.selectedRegion, clickedId, sourceRegion.troops);
+                        } else {
+                            openActionModal('attack', this.selectedRegion, clickedId, sourceRegion.troops);
+                        }
+                    } else {
+                        // Clicked non-neighbor: Select it if owned OR debug mode
+                        if (region.owner === myId || debugMode) {
+                            this.selectedRegion = clickedId;
+                        } else {
+                            this.selectedRegion = null;
+                        }
+                    }
+                }
+            }
+
+            toggleControl() { this.showControl = !this.showControl; }
+            toggleSupply() { this.showSupply = !this.showSupply; }
+
+            loop() {
+                this.draw();
+                requestAnimationFrame(this.loop);
+            }
+
+            draw() {
+                const ctx = this.ctx;
+
+                // Debug: Check if regions exist
+                const regionCount = Object.keys(this.game.map.regions).length;
+                if (regionCount === 0) {
+                    console.warn('[RENDERER] No regions to draw! game.map.regions is empty');
+                }
+
+                // Clear & Background
+                ctx.fillStyle = this.paperPattern || CONSTANTS.COLORS.BG;
+                ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                const currentPlayerId = this.game.currentPlayer;
+                const player = this.game.players ? this.game.players[currentPlayerId] : null;
+
+                // Safety check: If no players yet, skip fog of war (show all)
+                const hasPlayers = player !== null && player !== undefined;
+
+                // For fog of war, use myPlayerId in multiplayer, currentPlayer in single player
+                const fogPlayerId = this.game.isMultiplayer ? this.game.myPlayerId : this.game.currentPlayer;
+
+                // Helper: Is region visible?
+                const isVisible = (rid) => {
+                    if (!hasPlayers) return true; // No fog of war if game not set up
+                    const r = this.game.map.regions[rid];
+                    if (!r) return false;
+                    if (r.owner === fogPlayerId) return true;
+                    // Check neighbors
+                    for (let nid of r.neighbors) {
+                        const neighbor = this.game.map.regions[nid];
+                        if (neighbor && neighbor.owner === fogPlayerId) return true;
+                    }
+                    return false;
+                };
+
+                ctx.lineJoin = 'round';
+
+                // Draw Hatched Background (Gap Fillers)
+                // This fills the original jagged Voronoi cells with the hatch pattern.
+                // The smoothed regions will be drawn on top, leaving only the "gaps" hatched.
+                ctx.save();
+                ctx.fillStyle = this.hatchPattern || '#ccc';
+                Object.values(this.game.map.regions).forEach(r => {
+                    ctx.beginPath();
+                    r.polygon.forEach((p, i) => {
+                        if (i === 0) ctx.moveTo(CONSTANTS.OFFSET_X + p[0], CONSTANTS.OFFSET_Y + p[1]);
+                        else ctx.lineTo(CONSTANTS.OFFSET_X + p[0], CONSTANTS.OFFSET_Y + p[1]);
+                    });
+                    ctx.closePath();
+                    ctx.fill();
+                });
+                ctx.restore();
+
+                // Draw Regions
+                Object.values(this.game.map.regions).forEach(r => {
+                    const visible = isVisible(r.id);
+
+                    // Curvy Path
+                    ctx.beginPath();
+                    if (r.polygon.length > 2) {
+                        const points = r.polygon;
+                        const len = points.length;
+                        let prev = points[len - 1];
+                        let cur = points[0];
+                        let midX = CONSTANTS.OFFSET_X + (prev[0] + cur[0]) / 2;
+                        let midY = CONSTANTS.OFFSET_Y + (prev[1] + cur[1]) / 2;
+
+                        ctx.moveTo(midX, midY);
+
+                        for (let i = 0; i < len; i++) {
+                            const p = points[i];
+                            const next = points[(i + 1) % len];
+                            const nextMidX = CONSTANTS.OFFSET_X + (p[0] + next[0]) / 2;
+                            const nextMidY = CONSTANTS.OFFSET_Y + (p[1] + next[1]) / 2;
+
+                            const cX = CONSTANTS.OFFSET_X + p[0];
+                            const cY = CONSTANTS.OFFSET_Y + p[1];
+
+                            ctx.quadraticCurveTo(cX, cY, nextMidX, nextMidY);
+                        }
+                    } else {
+                        r.polygon.forEach((p, i) => {
+                            if (i === 0) ctx.moveTo(CONSTANTS.OFFSET_X + p[0], CONSTANTS.OFFSET_Y + p[1]);
+                            else ctx.lineTo(CONSTANTS.OFFSET_X + p[0], CONSTANTS.OFFSET_Y + p[1]);
+                        });
+                    }
+                    ctx.closePath();
+
+                    // Fill
+                    // First, fill with paper (opaque) to hide the hatching underneath
+                    ctx.fillStyle = this.paperPattern || CONSTANTS.COLORS.BG;
+                    ctx.fill();
+
+                    if (r.terrain === TerrainType.IMPASSABLE) {
+                        // Hatching Always Visible
+                        ctx.fillStyle = this.hatchPattern || '#ccc';
+                        ctx.fill();
+
+                        // Mountain Sketches (Always visible)
+                        ctx.strokeStyle = '#5c5040';
+                        ctx.lineWidth = 1;
+                        const cx = CONSTANTS.OFFSET_X + r.x;
+                        const cy = CONSTANTS.OFFSET_Y + r.y;
+                        const seed = r.id * 123;
+
+                        for (let i = 0; i < 3; i++) {
+                            const mx = cx + ((seed + i * 51) % 40 - 20);
+                            const my = cy + ((seed + i * 31) % 40 - 20);
+                            ctx.beginPath();
+                            ctx.moveTo(mx - 8, my + 5);
+                            ctx.lineTo(mx, my - 10);
+                            ctx.lineTo(mx + 8, my + 5);
+                            ctx.stroke();
+                        }
+                    } else if (r.terrain === TerrainType.FOREST) {
+                        // Forest fill (Visible tint or plain)
+                        ctx.fillStyle = visible ? '#bdccb9' : '#aebaa9';
+                        if (visible && r.owner === 1) ctx.fillStyle = CONSTANTS.COLORS.P1;
+                        else if (visible && r.owner === 2) ctx.fillStyle = CONSTANTS.COLORS.P2;
+                        ctx.fill();
+
+                        // Tree Images (Always visible if loaded)
+                        const cx = CONSTANTS.OFFSET_X + r.x;
+                        const cy = CONSTANTS.OFFSET_Y + r.y;
+
+                        if (this.treeImage && this.treeImage.complete) {
+                            for (let i = 0; i < 5; i++) {
+                                // Deterministic position based on region ID and index
+                                const tx = cx + Math.sin(r.id + i) * 20;
+                                const ty = cy + Math.cos(r.id + i * 2) * 20;
+
+                                // Draw tree image centered at tx, ty
+                                // Assuming tree icon size around 16x16 or similar, adjust scale if needed
+                                const size = 20;
+                                ctx.drawImage(this.treeImage, tx - size / 2, ty - size, size, size);
+                            }
+                        } else {
+                            // Fallback to triangles if image not loaded yet
+                            ctx.fillStyle = '#2f4f2f'; // Dark green ink
+                            for (let i = 0; i < 5; i++) {
+                                const tx = cx + Math.sin(r.id + i) * 20;
+                                const ty = cy + Math.cos(r.id + i * 2) * 20;
+                                ctx.beginPath();
+                                ctx.moveTo(tx, ty - 8);
+                                ctx.lineTo(tx - 4, ty);
+                                ctx.lineTo(tx + 4, ty);
+                                ctx.fill();
+                            }
+                        }
+                    } else {
+                        // Normal Terrain
+                        if (visible) {
+                            if (r.owner === 1) ctx.fillStyle = CONSTANTS.COLORS.P1;
+                            else if (r.owner === 2) ctx.fillStyle = CONSTANTS.COLORS.P2;
+                            else if (r.terrain === TerrainType.RARE_EARTH_MINE) ctx.fillStyle = CONSTANTS.COLORS.TERRAIN.RARE;
+                            else if (r.terrain === TerrainType.MATERIAL_MINE) ctx.fillStyle = CONSTANTS.COLORS.TERRAIN.MATERIAL;
+                            else if (r.terrain === TerrainType.OIL_RIG) ctx.fillStyle = CONSTANTS.COLORS.TERRAIN.OIL;
+                            else ctx.fillStyle = 'transparent'; // Show paper texture
+                            ctx.fill();
+                        } else {
+                            // FOG OF WAR (Hidden ownership)
+                            ctx.fillStyle = 'rgba(0,0,0,0.05)';
+                            ctx.fill();
+                        }
+                    }
+
+                    // Hover
+                    if (r.id === this.hoverRegion) {
+                        ctx.fillStyle = CONSTANTS.COLORS.HOVER;
+                        ctx.fill();
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = '#555';
+                        ctx.stroke();
+                        ctx.lineWidth = 1;
+                    }
+
+                    // Selection
+                    if (r.id === this.selectedRegion) {
+                        // Highlighter effect
+                        ctx.fillStyle = CONSTANTS.COLORS.SELECTED;
+                        ctx.fill();
+                        ctx.lineWidth = 3;
+                        ctx.strokeStyle = '#d4af37'; // Gold Outline
+                        ctx.stroke();
+                        ctx.lineWidth = 1;
+                    }
+
+
+                    // Stroke - Hand drawn style?
+                    // Use a shaky line? For now, standard line but color is ink.
+                    ctx.strokeStyle = 'rgba(60, 50, 40, 0.4)'; // Faint pencil line
+                    ctx.stroke();
+
+                    if (r.owner !== null && visible) {
+                        // Stronger border for owned territories
+                        ctx.strokeStyle = r.owner === 1 ? '#1a3c5a' : '#6a1a1a';
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                        ctx.lineWidth = 1;
+                    }
+
+                    // Control Overlay
+                    if (this.showControl && r.owner !== null && visible) {
+                        const ctrl = this.game.map.calculateControl(r.id, r.owner);
+                        if (ctrl > 0) {
+                            ctx.fillStyle = r.owner === 1 ? CONSTANTS.COLORS.P1 : CONSTANTS.COLORS.P2;
+                            ctx.globalAlpha = ctrl / 300; // Very faint
+                            ctx.fill();
+                            ctx.globalAlpha = 1.0;
+                        }
+                    }
+
+                    // Battle Animation (Ink splat?)
+                    if (visible) {
+                        const anim = this.game.animations.find(a => a.region === r.id);
+                        if (anim) {
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                            ctx.globalAlpha = anim.timer / 20;
+                            ctx.fill();
+                            ctx.globalAlpha = 1.0;
+                            anim.timer--;
+                            if (anim.timer <= 0) this.game.animations = this.game.animations.filter(a => a !== anim);
+                        }
+                    }
+
+                    // Labels / Icons
+                    if (visible) {
+                        const cx = CONSTANTS.OFFSET_X + r.x;
+                        const cy = CONSTANTS.OFFSET_Y + r.y;
+
+                        ctx.fillStyle = '#111';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+
+                        // Troops - Stamped number
+                        if (r.troops > 0) {
+                            ctx.font = 'bold 14px "Courier New"';
+                            // Circle bg for troop count
+                            ctx.beginPath();
+                            ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+                            ctx.fillStyle = r.owner === 1 ? '#dbe9f4' : '#f4dbdb'; // Light paper tint
+                            ctx.fill();
+                            ctx.strokeStyle = r.owner === 1 ? '#2b5c8a' : '#a83232';
+                            ctx.stroke();
+
+                            ctx.fillStyle = '#000';
+                            ctx.fillText(r.troops, cx, cy);
+                        }
+
+                        // Building Icons - Simplified Symbols
+                        let iconY = cy + 18;
+                        r.buildings.forEach(b => {
+                            ctx.font = '14px serif';
+                            if (b.type === BuildingType.HEADQUARTERS) ctx.fillText("⚑", cx, iconY); // Flag
+                            else if (b.type === BuildingType.MILITARY_CAMP) ctx.fillText("⛺", cx, iconY);// 
+                            else if (b.type === BuildingType.ARMOURY) ctx.fillText("⚔", cx, iconY);
+                            else if (b.type === BuildingType.ARTILLERY) ctx.fillText("cannon", cx, iconY);
+                            // Text glyphs are okay, but maybe simplified shapes are better?
+                            // Let's stick to glyphs for now but ensure they are dark ink
+                        });
+
+                        // Mine Icon
+                        if ([TerrainType.RARE_EARTH_MINE, TerrainType.MATERIAL_MINE, TerrainType.OIL_RIG].includes(r.terrain)) {
+                            ctx.font = '14px Arial';
+                            let mIcon = "♦"; // Diamond
+                            if (r.terrain === TerrainType.MATERIAL_MINE) mIcon = "⚒"; // Hammer/Pick
+                            if (r.terrain === TerrainType.OIL_RIG) mIcon = "🛢";
+                            ctx.fillStyle = '#443';
+                            ctx.fillText(mIcon, cx + 15, cy - 10);
+                        }
+                    }
+                });
+
+                // VISUALIZE QUEUED ACTIONS (Arrows)
+                // In multiplayer, show MY actions (myPlayerId), not currentPlayer's
+                const myId = this.game.isMultiplayer ? this.game.myPlayerId : this.game.currentPlayer;
+                const myPlayer = myId ? this.game.players[myId] : null;
+
+                // Debug: Log action queue status once per second (avoid spam)
+                if (!this._lastArrowLog || Date.now() - this._lastArrowLog > 1000) {
+                    if (myPlayer && myPlayer.actions && myPlayer.actions.length > 0) {
+                        console.log('[ARROWS] Drawing', myPlayer.actions.length, 'actions for player', myId);
+                        this._lastArrowLog = Date.now();
+                    }
+                }
+
+                if (myPlayer && myPlayer.actions && myPlayer.actions.length > 0) {
+                    myPlayer.actions.forEach((action, idx) => {
+                        if (action.type === 'move' || action.type === 'attack') {
+                            const r1 = this.game.map.regions[action.from];
+                            const r2 = this.game.map.regions[action.to];
+
+                            // Safety check
+                            if (!r1 || !r2) {
+                                console.warn('[ARROWS] Missing region for action', action);
+                                return;
+                            }
+
+                            // Arrow Path
+                            const startX = CONSTANTS.OFFSET_X + r1.x;
+                            const startY = CONSTANTS.OFFSET_Y + r1.y;
+                            const endX = CONSTANTS.OFFSET_X + r2.x;
+                            const endY = CONSTANTS.OFFSET_Y + r2.y;
+
+                            ctx.beginPath();
+                            ctx.moveTo(startX, startY);
+                            // Draw slight arc
+                            const midX = (startX + endX) / 2;
+                            const midY = (startY + endY) / 2;
+                            const offset = 20 * (idx % 2 === 0 ? 1 : -1);
+
+                            // Calculate normal vector for offset
+                            const dx = endX - startX;
+                            const dy = endY - startY;
+                            const len = Math.sqrt(dx * dx + dy * dy);
+                            const nx = -dy / len;
+                            const ny = dx / len;
+
+                            const cpX = midX + nx * offset;
+                            const cpY = midY + ny * offset;
+
+                            ctx.quadraticCurveTo(cpX, cpY, endX, endY);
+
+                            ctx.strokeStyle = action.type === 'attack' ? '#d00' : '#444';
+                            ctx.lineWidth = 2;
+                            ctx.setLineDash([10, 5]);
+                            ctx.stroke();
+                            ctx.setLineDash([]);
+
+                            // Arrow Head
+                            const angle = Math.atan2(endY - cpY, endX - cpX);
+                            ctx.beginPath();
+                            ctx.moveTo(endX, endY);
+                            ctx.lineTo(endX - 10 * Math.cos(angle - Math.PI / 6), endY - 10 * Math.sin(angle - Math.PI / 6));
+                            ctx.lineTo(endX - 10 * Math.cos(angle + Math.PI / 6), endY - 10 * Math.sin(angle + Math.PI / 6));
+                            ctx.closePath();
+                            ctx.fillStyle = action.type === 'attack' ? '#d00' : '#444';
+                            ctx.fill();
+
+                            // Troop Count Label
+                            ctx.fillStyle = '#fff';
+                            ctx.font = 'bold 12px Arial';
+                            const labelX = (startX + endX) / 2;
+                            const labelY = (startY + endY) / 2;
+                            ctx.fillText(action.troops, labelX, labelY);
+                        }
+                    });
+                }
+
+
+
+
+                // Supply Lines - Hand drawn dashed lines
+                if (this.showSupply) {
+                    // Use fogPlayerId which is already defined for multiplayer
+                    const supplyPlayer = this.game.players ? this.game.players[fogPlayerId] : null;
+                    if (supplyPlayer) {
+                        if (supplyPlayer.id === 1) ctx.strokeStyle = 'rgba(43, 92, 138, 0.6)';
+                        else ctx.strokeStyle = 'rgba(168, 50, 50, 0.6)';
+
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([5, 5]); // Dashed
+
+                        Object.values(this.game.map.regions).forEach(r => {
+                            if (r.owner === supplyPlayer.id && r.id !== supplyPlayer.supplySource) {
+                                const path = this.game.map.getSupplyPath(supplyPlayer.supplySource, r.id, supplyPlayer.id);
+                                if (path.length > 1) {
+                                    ctx.beginPath();
+                                    for (let i = 0; i < path.length - 1; i++) {
+                                        const r1 = this.game.map.regions[path[i]];
+                                        const r2 = this.game.map.regions[path[i + 1]];
+                                        ctx.moveTo(CONSTANTS.OFFSET_X + r1.x, CONSTANTS.OFFSET_Y + r1.y);
+                                        ctx.lineTo(CONSTANTS.OFFSET_X + r2.x, CONSTANTS.OFFSET_Y + r2.y);
+                                    }
+                                    ctx.stroke();
+                                }
+                            }
+                        });
+                        ctx.setLineDash([]); // Reset
+                    }
+                }
+            }
+        }
+
+        // ================= UI CONTROLLER =================
+
+        // ================= UI CONTROLLER =================
+        let game = null;
+
+        function joinGame() {
+            const roomId = document.getElementById('room-id').value;
+            if (!roomId) return alert("Enter Room ID");
+
+            document.getElementById('connection-status').innerText = "Connecting...";
+
+            game = new Game();
+            game.renderer = new Renderer(game);
+            game.network = new NetworkManager(game);
+
+            // Read cinematics preference from checkbox
+            const cinematicsCheckbox = document.getElementById('cinematics-pref');
+            game.cinematicsEnabled = cinematicsCheckbox ? cinematicsCheckbox.checked : true;
+
+            game.network.connect(roomId); // Pass roomId to auto-join
+
+            // Start background music on game join
+            startBackgroundMusic();
+
+            // Modal hides when role is assigned or explicit success
+        }
+
+        function updateUI() {
+            if (!game) return;
+            document.getElementById('turn-display').innerText = game.turn + 1;
+            document.getElementById('phase-display').innerText = game.currentPlayer === 1 ? "P1 PLANNING" : "P2 PLANNING";
+
+            const container = document.getElementById('player-stats-container');
+            container.innerHTML = '';
+
+            // Determine which player is "me" in multiplayer
+            const myId = game.isMultiplayer ? game.myPlayerId : game.currentPlayer;
+            const myPlayer = game.players[myId];
+
+            Object.values(game.players).forEach(p => {
+                const isMe = p.id === myId;
+                const isCurrent = p.id === game.currentPlayer;
+                const div = document.createElement('div');
+                div.className = 'player-card';
+                div.style.borderLeft = isCurrent ? `4px solid ${CONSTANTS.COLORS.SELECTED}` : 'none';
+                div.style.paddingLeft = isCurrent ? '10px' : '0';
+
+                // Check if we can see this player's stats
+                const canSeeStats = isMe || (myPlayer && myPlayer.espionageActive);
+
+                const econ = canSeeStats ? game.calculateEconomy(p.id) : null;
+                const territoryCount = Object.values(game.map.regions).filter(r => r.owner === p.id).length;
+                const troopCount = Object.values(game.map.regions).reduce((acc, r) => r.owner === p.id ? acc + r.troops : acc, 0);
+
+                if (canSeeStats) {
+                    // Full stats visible
+                    const intelLabel = !isMe && myPlayer.espionageActive ? ' <span style="color:#f80; font-size:10px;">(INTEL)</span>' : '';
+                    div.innerHTML = `
+                <div class="player-name" style="color: ${p.color}">${p.name}${isCurrent ? " (ACTING)" : ""}${intelLabel}</div>
+                <div class="resource-row">
+                    <span>💰 ${Math.floor(p.resources.money)} <span style="color:#6f6; font-size:10px;">(+${Math.floor(econ.income.money)})</span><span style="color:#f66; font-size:10px;">(-${Math.floor(econ.maint.money)})</span></span>
+                    <span>⚙️ ${Math.floor(p.resources.materials)} <span style="color:#ccc; font-size:10px;">(+${Math.floor(econ.income.materials)}/-${Math.floor(econ.maint.materials)})</span></span>
+                    <span>🛢️ ${Math.floor(p.resources.oil)} <span style="color:#88a; font-size:10px;">(+${Math.floor(econ.income.oil)}/-${Math.floor(econ.maint.oil)})</span></span>
+                </div>
+                <div class="resource-row">
+                    <span>Troops: ${troopCount}</span>
+                    <span>Territory: ${territoryCount}</span>
+                </div>
+                <div class="morale-bar-container">
+                    <div class="morale-bar" style="width: ${p.morale}%; background-color: ${p.morale > 50 ? '#5f5' : (p.morale > 20 ? '#ff5' : '#f55')}"></div>
+                </div>
+                </div>
+                <div style="font-size: 10px; text-align: right;">Morale: ${p.morale.toFixed(1)}% | Prop: L${p.propagandaLevel}</div>
+            `;
+                } else {
+                    // Hidden stats for enemy
+                    div.innerHTML = `
+                <div class="player-name" style="color: ${p.color}">${p.name}${isCurrent ? " (ACTING)" : ""}</div>
+                <div class="resource-row" style="color: #888;">
+                    <span>💰 ???</span>
+                    <span>⚙️ ???</span>
+                    <span>🛢️ ???</span>
+                </div>
+                <div class="resource-row">
+                    <span>Troops: ???</span>
+                    <span>Territory: ${territoryCount}</span>
+                </div>
+                <div class="morale-bar-container">
+                    <div class="morale-bar" style="width: 50%; background-color: #888"></div>
+                </div>
+                </div>
+                <div style="font-size: 10px; text-align: right; color: #888;">Morale: ??? | Prop: ???</div>
+            `;
+                }
+                container.appendChild(div);
+            });
+
+            // Action Queue UI
+            const p = game.players[game.currentPlayer];
+            if (p.actions.length > 0) {
+                const qDiv = document.createElement('div');
+                qDiv.className = 'player-card'; // Reuse style
+                qDiv.style.marginTop = '10px';
+                qDiv.innerHTML = `<div style="font-weight:bold; border-bottom:1px solid #aaa; margin-bottom:5px;">PLANNED ACTIONS</div>`;
+
+                p.actions.forEach((act, idx) => {
+                    const item = document.createElement('div');
+                    item.style.fontSize = '12px';
+                    item.style.marginBottom = '4px';
+                    item.style.display = 'flex';
+                    item.style.justifyContent = 'space-between';
+
+                    let desc = "";
+                    if (act.type === 'move') desc = `Move ${act.troops} fr R${act.from} to R${act.to}`;
+                    else if (act.type === 'attack') desc = `Attack R${act.to} w/ ${act.troops}`;
+                    else if (act.type === 'build') desc = `Build ${BuildingData[act.building].name} @ R${act.region}`;
+                    else if (act.type === 'upgrade') desc = `Upgrade @ R${act.region}`;
+                    else if (act.type === 'propaganda_upgrade') desc = `Propaganda Upgrade`;
+
+                    item.innerHTML = `<span>${desc}</span> <span style="cursor:pointer; color:red; font-weight:bold;" onclick="game.cancelAction(${game.currentPlayer}, ${idx})">X</span>`;
+                    qDiv.appendChild(item);
+                });
+                container.appendChild(qDiv);
+            }
+
+            // Update espionage button state
+            updateEspionageButton();
+        }
+
+        function updateEspionageButton() {
+            const btn = document.getElementById('espionage-btn');
+            if (!btn || !game || !game.players) return;
+
+            const myId = game.isMultiplayer ? game.myPlayerId : game.currentPlayer;
+            const myPlayer = game.players[myId];
+            if (!myPlayer) return;
+
+            const cost = 500;
+            const canAfford = myPlayer.resources.money >= cost;
+            const onCooldown = myPlayer.espionageCooldown > 0;
+            const isActive = myPlayer.espionageActive;
+
+            if (isActive) {
+                btn.innerText = '🕵️ INTEL ACTIVE';
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+                btn.style.backgroundColor = '#f80';
+            } else if (onCooldown) {
+                btn.innerText = `🕵️ ESPIONAGE (${myPlayer.espionageCooldown} turns)`;
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+                btn.style.backgroundColor = '';
+            } else if (!canAfford) {
+                btn.innerText = '🕵️ ESPIONAGE ($500)';
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+                btn.style.backgroundColor = '';
+            } else {
+                btn.innerText = '🕵️ ESPIONAGE ($500)';
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.backgroundColor = '';
+            }
+        }
+
+        function activateEspionage() {
+            if (!game) return;
+            const myId = game.isMultiplayer ? game.myPlayerId : game.currentPlayer;
+            game.activateEspionage(myId);
+        }
+
+        function updateLogUI(gameInstance) {
+            const g = gameInstance || game;
+            if (!g || !g.battleLog) return;
+
+            const log = document.getElementById('battle-log');
+            log.innerHTML = g.battleLog.slice(-15).map(l => `<div class="log-entry">${l}</div>`).join('');
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function updateSelectionUI(region) {
+            const info = document.getElementById('selected-region-info');
+            if (!region) {
+                info.innerHTML = "Select a region...";
+                return;
+            }
+
+            const myId = game.isMultiplayer ? game.myPlayerId : game.currentPlayer;
+
+            let bHtml = "";
+            if (region.owner === myId) {
+                bHtml = `<button class="btn" style="margin-top:10px; font-size:12px;" onclick="openBuildModal(${region.id})">CONSTRUCT BUILDING</button>`;
+
+                // HQ Move Button - only show if this region doesn't have HQ
+                if (!region.hasBuilding(BuildingType.HEADQUARTERS)) {
+                    const cooldown = game.hqMoveCooldown[myId];
+                    const canAffordHQ = game.players[myId].resources.money >= 300 && game.players[myId].resources.oil >= 100;
+                    const hasSupply = game.map.hasSupplyLine(game.players[myId].hqRegion, region.id, myId);
+
+                    let hqBtnClass = 'btn';
+                    let hqBtnDisabled = '';
+                    let hqBtnText = '🏛️ MOVE HQ HERE ($300 + 100 Oil)';
+
+                    if (cooldown > 0) {
+                        hqBtnClass += ' disabled';
+                        hqBtnDisabled = 'disabled';
+                        hqBtnText = `🏛️ HQ MOVE (Cooldown: ${cooldown} turns)`;
+                    } else if (!canAffordHQ) {
+                        hqBtnClass += ' disabled';
+                        hqBtnDisabled = 'disabled';
+                        hqBtnText = '🏛️ MOVE HQ HERE (Not enough resources)';
+                    } else if (!hasSupply) {
+                        hqBtnClass += ' disabled';
+                        hqBtnDisabled = 'disabled';
+                        hqBtnText = '🏛️ MOVE HQ HERE (No supply line)';
+                    }
+
+                    bHtml += `<button class="${hqBtnClass}" style="margin-top:5px; font-size:11px;" onclick="queueHQMove(${region.id})" ${hqBtnDisabled}>${hqBtnText}</button>`;
+                } else {
+                    bHtml += `<div style="margin-top:5px; font-size:11px; color:#4a9;">🏛️ HEADQUARTERS</div>`;
+                }
+            }
+
+            // Display Control Influence
+            const controlVal = game.map.calculateControl(region.id, game.currentPlayer);
+
+            info.innerHTML = `
+        <div style="font-size: 18px; color: var(--accent-color); margin-bottom: 5px;">REGION ${region.id}</div>
+        <div>Owner: <span style="color: ${region.owner === 1 ? CONSTANTS.COLORS.P1 : (region.owner === 2 ? CONSTANTS.COLORS.P2 : '#aaa')}">${region.owner ? "P" + region.owner : "Neutral"}</span></div>
+        <div>Control: ${Math.floor(controlVal)}%</div>
+        <div>Troops: ${region.troops}</div>
+        <div>Buildings: ${region.buildings.map(b => b.data.name + " L" + b.level).join(', ') || "None"}</div>
+        ${bHtml}
+    `;
+        }
+
+        // ================= MODAL LOGIC =================
+
+        let currentAction = null;
+
+        function openActionModal(type, from, to, maxTroops) {
+            // Adjust max troops based on committed
+            // In multiplayer, use myPlayerId; in single player, use currentPlayer
+            const myId = game.isMultiplayer ? game.myPlayerId : game.currentPlayer;
+            const committed = game.getCommittedTroops(myId, from);
+            const available = maxTroops - committed;
+
+            if (available <= 0) {
+                alert("All troops in this region are already committed to other actions!");
+                return;
+            }
+
+            // Calculate oil cost per troop
+            let costPerTroop = 0;
+            if (type === 'move' || type === 'attack') {
+                const rFrom = game.map.regions[from];
+                const isNeighbor = rFrom.neighbors.has(to);
+                costPerTroop = isNeighbor ? 0.1 : 0.3;
+            }
+
+            currentAction = { type, from, to, max: available, current: Math.floor(available / 2), costPerTroop: costPerTroop };
+
+
+            document.getElementById('action-title').innerText = type === 'move' ? "MOVE TROOPS" : "ATTACK REGION";
+            document.getElementById('action-details').innerText = `From Region ${from} to Region ${to}`;
+            document.getElementById('action-max-troops').innerText = maxTroops;
+
+            const slider = document.getElementById('troop-slider');
+            slider.max = maxTroops;
+            slider.value = currentAction.current;
+
+            updateTroopLabel();
+            document.getElementById('action-modal').style.display = 'flex';
+        }
+
+        function adjustTroops(amount) {
+            const slider = document.getElementById('troop-slider');
+            let val = parseInt(slider.value) + amount;
+            if (val < 0) val = 0;
+            if (val > currentAction.max) val = currentAction.max;
+            slider.value = val;
+            updateTroopLabel();
+        }
+
+        function updateTroopLabel() {
+            const val = parseInt(document.getElementById('troop-slider').value);
+            const oilCost = Math.ceil(val * (currentAction.costPerTroop || 0));
+
+            let label = `${val}`;
+            if (oilCost > 0) {
+                label += ` (Oil: ${oilCost})`;
+            }
+
+            document.getElementById('troop-val-label').innerText = label;
+            currentAction.current = val;
+        }
+
+        function confirmAction() {
+            if (currentAction.current > 0) {
+                // Queue the action instead of immediate execution
+                // In multiplayer, use myPlayerId; in single player, use currentPlayer
+                const myId = game.isMultiplayer ? game.myPlayerId : game.currentPlayer;
+                game.queueAction(myId, {
+                    type: currentAction.type,
+                    from: currentAction.from,
+                    to: currentAction.to,
+                    troops: currentAction.current
+                });
+
+                // Deselect to prevent multiple actions in one click confusing logic
+                game.renderer.selectedRegion = null;
+                updateSelectionUI(null);
+                updateUI(); // Refresh UI to show queue
+            }
+            closeModals();
+        }
+
+        function queueHQMove(toRegion) {
+            if (!game) return;
+            const myId = game.isMultiplayer ? game.myPlayerId : game.currentPlayer;
+
+            // Queue the HQ move action
+            game.queueAction(myId, {
+                type: 'move_hq',
+                toRegion: toRegion
+            });
+
+            // Deselect and update UI
+            game.renderer.selectedRegion = null;
+            updateSelectionUI(null);
+            updateUI();
+        }
+
+        function openBuildModal(rid) {
+            const region = game.map.regions[rid];
+            // In multiplayer, use myPlayerId; in single player, use currentPlayer
+            const myId = game.isMultiplayer ? game.myPlayerId : game.currentPlayer;
+            const p = game.players[myId];
+
+            // ISOLATION CHECK
+            const hasSupply = game.map.hasSupplyLine(p.supplySource, rid, p.id);
+
+            // Header
+            const list = document.getElementById('build-list');
+            list.innerHTML = '';
+
+            if (!hasSupply) {
+                list.innerHTML = `<div style="color: #f55; font-weight: bold; padding: 10px; text-align: center;">REGION ISOLATED<br><span style="font-size: 12px; color: #aaa;">Cannot build in isolated territories. Reconnect supply line first.</span></div>`;
+                document.getElementById('build-modal').style.display = 'flex';
+                return;
+            }
+
+            // Standard Buildings (Excluded Propaganda)
+
+            [1, 2, 3, 4].forEach(type => {
+                const bData = BuildingData[type];
+                const cost = bData.build;
+                const costStr = `$${cost.m} M${cost.mt} O${cost.o}`;
+                const built = region.hasBuilding(type);
+                const canAfford = p.resources.canAfford(new Resources(cost.m, cost.mt, cost.o));
+
+                // Check if already queued
+                const queued = p.actions.some(a => a.type === 'build' && a.region === rid && a.building === type);
+
+
+                const div = document.createElement('div');
+                div.className = `build-option ${built ? 'built' : (!canAfford ? 'cant-afford' : '')}`;
+                div.innerHTML = `
+            <div>
+                <div>${bData.name}</div>
+                <div class="cost-text">${costStr}</div>
+            </div>
+            <div style="font-weight: bold;">${built ? "BUILT" : "BUILD"}</div>
+        `;
+                if (!built && canAfford) {
+                    div.onclick = () => {
+                        game.queueAction(myId, { type: 'build', region: rid, building: type });
+                        closeModals();
+                    };
+                }
+                list.appendChild(div);
+            });
+
+            // HQ Upgrade
+            const hq = region.getBuilding(BuildingType.HEADQUARTERS);
+            if (hq) {
+                const cost = hq.getUpgradeCost();
+                const costStr = `$${cost.money} M${cost.materials} O${cost.oil}`;
+                const canAfford = p.resources.canAfford(cost);
+
+                const div = document.createElement('div');
+                div.className = `build-option ${!canAfford ? 'cant-afford' : ''}`;
+                div.innerHTML = `
+            <div>
+                <div>Upgrade HQ (L${hq.level} -> L${hq.level + 1})</div>
+                <div class="cost-text">${costStr}</div>
+            </div>
+            <div>UPGRADE</div>
+        `;
+                if (canAfford) {
+                    div.onclick = () => {
+                        game.queueAction(myId, { type: 'upgrade', region: rid, building: BuildingType.HEADQUARTERS });
+                        closeModals();
+                    };
+                }
+                list.appendChild(div);
+            }
+
+            document.getElementById('build-modal').style.display = 'flex';
+        }
+
+        function openBudgetModal() {
+            const myId = game.isMultiplayer ? game.myPlayerId : game.currentPlayer;
+            const data = game.getBudgetBreakdown(myId);
+            const content = document.getElementById('budget-content');
+
+            let html = `
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1;">
+                        <h3 style="border-bottom: 1px solid #aaa; margin-bottom: 5px;">INCOME</h3>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Base Income:</span>
+                            <span>$${data.income.base.money} / ${data.income.base.materials}M / ${data.income.base.oil}O</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Territory (${data.income.territory.count}):</span>
+                            <span>$${data.income.territory.money} / ${data.income.territory.materials}M / ${data.income.territory.oil}O</span>
+                        </div>
+                        ${data.income.hq ? `
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>HQ Bonus (L${data.income.hq.level}):</span>
+                            <span>$${data.income.hq.money} / ${data.income.hq.materials}M / ${data.income.hq.oil}O</span>
+                        </div>` : ''}
+                        
+                        ${data.income.mines.length > 0 ? '<div style="margin-top: 5px; font-weight: bold;">Mines:</div>' : ''}
+                        ${data.income.mines.map(m => `
+                            <div style="display: flex; justify-content: space-between; padding-left: 10px; font-size: 13px;">
+                                <span>${m.type} (R${m.regionId}, L${m.level})</span>
+                                <span>${m.money > 0 ? '$' + m.money : ''}${m.materials > 0 ? m.materials + 'M' : ''}${m.oil > 0 ? m.oil + 'O' : ''}</span>
+                            </div>
+                        `).join('')}
+                        
+                        <div style="border-top: 1px solid #aaa; margin-top: 5px; padding-top: 5px; font-weight: bold; display: flex; justify-content: space-between;">
+                            <span>TOTAL INCOME:</span>
+                            <span style="color: #4a4;">$${data.income.total.money} / ${data.income.total.materials}M / ${data.income.total.oil}O</span>
+                        </div>
+                    </div>
+                    
+                    <div style="flex: 1;">
+                        <h3 style="border-bottom: 1px solid #aaa; margin-bottom: 5px;">EXPENSES</h3>
+                        <div style="margin-bottom: 5px; font-weight: bold;">Infstructure Maintenance:</div>
+                        ${data.maintenance.buildings.length === 0 ? '<div style="padding-left: 10px; font-style: italic;">None</div>' : ''}
+                        ${data.maintenance.buildings.map(b => `
+                            <div style="display: flex; justify-content: space-between; padding-left: 10px; font-size: 13px;">
+                                <span>${b.typeName} (R${b.regionId}, L${b.level})</span>
+                                <span style="color: #c44;">-$${b.cost.money} / -${b.cost.materials}M / -${b.cost.oil}O</span>
+                            </div>
+                        `).join('')}
+                        
+                        <div style="margin-top: 10px; font-weight: bold;">Army Wages:</div>
+                        <div style="display: flex; justify-content: space-between; padding-left: 10px;">
+                            <span>${data.troops.count} Troops (@ $${data.troops.wagePerSoldier}):</span>
+                            <span style="color: #c44;">-$${data.troops.totalWage}</span>
+                        </div>
+
+                        <div style="border-top: 1px solid #aaa; margin-top: 10px; padding-top: 5px; font-weight: bold; display: flex; justify-content: space-between;">
+                            <span>NET INCOME:</span>
+                            <span>
+                                <span style="${data.net.money >= 0 ? 'color: #4a4' : 'color: #c44'}">$${data.net.money}</span> / 
+                                <span style="${data.net.materials >= 0 ? 'color: #4a4' : 'color: #c44'}">${data.net.materials}M</span> / 
+                                <span style="${data.net.oil >= 0 ? 'color: #4a4' : 'color: #c44'}">${data.net.oil}O</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            content.innerHTML = html;
+            document.getElementById('budget-modal').style.display = 'flex';
+        }
+
+        function openBattlesModal() {
+            if (!game) return;
+
+            const content = document.getElementById('battles-content');
+            const reports = game.battleReports || [];
+
+            if (reports.length === 0) {
+                content.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">No battles yet.</div>';
+                document.getElementById('battles-modal').style.display = 'flex';
+                return;
+            }
+
+            // Render battles in reverse chronological order (most recent first)
+            let html = '';
+            for (let i = reports.length - 1; i >= 0; i--) {
+                const b = reports[i];
+                const winnerColor = b.outcome === 'attacker' ? '#4a9' : '#a54';
+                const outcomeText = b.outcome === 'attacker' ? '✓ ATTACKER WINS' : '✗ DEFENDER WINS';
+
+                html += `
+                <div style="border: 1px solid #5c5040; margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.3);">
+                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #8b4513; padding-bottom: 5px; margin-bottom: 8px;">
+                        <span><strong>TURN ${b.turn}</strong> | Region ${b.region}</span>
+                        <span style="color: ${winnerColor}; font-weight: bold;">${outcomeText}</span>
+                    </div>
+
+                    <table style="width:100%; font-size:11px; border-collapse: collapse;">
+                        <tr style="background: rgba(0,0,0,0.1);">
+                            <th style="text-align:left; padding:3px;"></th>
+                            <th style="text-align:center; padding:3px; color:#2b5c8a;">${b.attacker.name || 'Attacker'}</th>
+                            <th style="text-align:center; padding:3px; color:#a83232;">${b.defender.name || 'Defender'}</th>
+                        </tr>
+                        <tr>
+                            <td style="padding:3px;">Troops</td>
+                            <td style="text-align:center; padding:3px;">${b.attacker.troops}</td>
+                            <td style="text-align:center; padding:3px;">${b.defender.troops}</td>
+                        </tr>
+                        ${b.attacker.equipmentMod ? `
+                        <tr>
+                            <td style="padding:3px;">Equipment (${b.attacker.equipment}/${b.defender.equipment})</td>
+                            <td style="text-align:center; padding:3px;">×${b.attacker.equipmentMod.toFixed(2)}</td>
+                            <td style="text-align:center; padding:3px;">×${b.defender.equipmentMod ? b.defender.equipmentMod.toFixed(2) : '-'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:3px;">Morale (${Math.floor(b.attacker.morale)}/${Math.floor(b.defender.morale || 0)})</td>
+                            <td style="text-align:center; padding:3px;">×${b.attacker.moraleMod.toFixed(2)}</td>
+                            <td style="text-align:center; padding:3px;">×${b.defender.moraleMod ? b.defender.moraleMod.toFixed(2) : '-'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:3px;">Control (${Math.floor(b.attacker.control)}/${Math.floor(b.defender.control)})</td>
+                            <td style="text-align:center; padding:3px;">×${b.attacker.controlMod.toFixed(2)}</td>
+                            <td style="text-align:center; padding:3px;">×${b.defender.controlMod ? b.defender.controlMod.toFixed(2) : '-'}</td>
+                        </tr>
+                        ` : ''}
+                        <tr style="background: rgba(0,0,0,0.1); font-weight: bold;">
+                            <td style="padding:3px;">POWER</td>
+                            <td style="text-align:center; padding:3px; color:#2b5c8a;">${Math.floor(b.attacker.power)}</td>
+                            <td style="text-align:center; padding:3px; color:#a83232;">${Math.floor(b.defender.power)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:3px;">Casualties</td>
+                            <td style="text-align:center; padding:3px; color:#800;">${b.attackerCasualties}</td>
+                            <td style="text-align:center; padding:3px; color:#800;">${b.defenderCasualties}</td>
+                        </tr>
+                    </table>
+
+                    <div style="margin-top: 8px; font-size: 10px; color: #555; font-style: italic;">
+                        ${b.reason}
+                    </div>
+                </div>
+                `;
+            }
+
+            content.innerHTML = html;
+            document.getElementById('battles-modal').style.display = 'flex';
+        }
+
+        function closeModals() {
+            document.getElementById('action-modal').style.display = 'none';
+            document.getElementById('build-modal').style.display = 'none';
+            document.getElementById('budget-modal').style.display = 'none';
+            document.getElementById('battles-modal').style.display = 'none';
+            document.getElementById('replay-modal').style.display = 'none';
+        }
+
+        // Replay control functions
+        function startReplay() {
+            if (game) {
+                game.startReplaySequence();
+            }
+        }
+
+        function skipReplay() {
+            if (game) {
+                game.skipReplaySequence();
+            }
+        }
+
+        function showVictory(winnerId) {
+            document.getElementById('victory-text').innerText = `${game.players[winnerId].name.toUpperCase()} WINS!`;
+            document.getElementById('victory-screen').style.display = 'flex';
+        }
+
+        // Audio control functions
+        let isMuted = false;
+
+        function toggleMute() {
+            const bgm = document.getElementById('bgm');
+            const btn = document.getElementById('mute-btn');
+
+            if (isMuted) {
+                bgm.muted = false;
+                btn.innerText = '🔊';
+                isMuted = false;
+            } else {
+                bgm.muted = true;
+                btn.innerText = '🔇';
+                isMuted = true;
+            }
+        }
+
+        function startBackgroundMusic() {
+            const bgm = document.getElementById('bgm');
+            bgm.volume = 0.5; // 50% volume
+            bgm.play().catch(e => {
+                // Autoplay was prevented - user needs to interact first
+                console.log('Autoplay prevented, music will start on user interaction');
+            });
+        }
+
+        // Init
+        updateUI();
+
+    </script>
+</body>
+
+</html>

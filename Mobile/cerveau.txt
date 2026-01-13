@@ -1,0 +1,119 @@
+Strategy game idea inspired from risk: Cervaeu
+
+Key points:
+
+Resources:
+
+A) Currency: 
+1) Money 
+(Upgrade supply line*, pay staff and maintain infrastructure on a daily basis, build/upgrade infrastructure*, run propaganda) 
+How to earn? Receive a fixed budget* from supply line on a regular basis, occupy enemy territories, sell rare minerals by running rare earth mines*)   
+2) Materials (build/upgrade infrastructure)
+How to earn? Receive a fixed amount from supply line on a regular basis, occupy enemy territories, occupying material mine*)
+3) Oil (maintain infrastructure on a regular basis, move* troops, launch an attack*)
+How to earn? Receive a fixed amount from supply line on a regular basis, occupy enemy territories, occupying oil mine*)
+
+B) Staff and infrastructure:
+1) Troops strength(TS) (more strength stronger attacking power)
+Reinforcements are sent from supply lines, reinforcements depends upon capacity i.e. number of *camps and headquater level.
+
+3) Equipment strength(ES) (more strength more attacking power)
+Upgrade using money and materials.
+
+C) Psychological
+1) Morale(M): 
+Measured from (1-100)%, more the morale more the attacking power, morale is complex and depends on factors such as: 
+a) causalities(lowers morale), 
+b) *control of enemy(presence of long range enemy *artilleries aiming at camps, *snipers, enemy propaganda lowers morale) 
+c) living conditions i.e. if unable to pay staff regularly lowers morale
+d) victory in attacks and defenses boosts morale, successful defenses boosts morale significantly more. 
+e) propaganda(self) boosts morale
+f) a morale less than 30% will make 50% of the troop deny going on attack, morale less than 20% will make all troops disobey orders and launch coup ending the game for that side)
+
+2) Control(C)
+Control is a local variable varies from region to region from 100% (region occupied, no enemy base adjacent, no long range artillery snipers targeting region)
+which gradually decreases more the enemy forces are nearby with 0% meaning enemy took over and no military base or artillery/sniper of player is nearby), more control over a region better attacking power on it
+b) presence of military camps* in adjacent region increases control of that region
+c) long range artilery and snipers targetting that region increases control over that region.
+d) control over a region decreases enemy morale if occupied by enemy.
+e) if enemy forces are occupying a region where you have some control, enemy forces will suffer a fixed ammount of casualities regularly and lower in number increasing your control if not reinforced), if two adjacent regions are occupied by two players, and both region has miltary base only both will suffer casualities due to each other's control, the number will depend on camp level of enemy and player)
+
+
+Gameplay objects:
+
+Supply line : This is the primary source of supplies on each turn to maintain, upgrade and expand, this line increases and branches into the region as you expand, enemy can cut your supply lines by occupying your region, if there is a region right after you are occupying that with no other region of yours adjacent to it i.e. isolated, it gets cutoff and you can't upgrade anything from that region or claim resources you get from there, only use use the military strength of that place to attack or move. The supply line has a source, which is at one end of the map, if that source is occupied, you will be deprived of your regular supplies and won't be able to sell anything, losing supply source reduces morale by 30%) 
+(Implement using tree)
+
+Military camps: takes money, oil and material to maintain i.e remain operational on a daily basisinital resource cost to build), houses soldiers, can be upgraded using money and materials thus increasing capacity and control effect, also cost for mainteinance, asserts control over adjacent regions. (enemies take over your camps if they attack and win that region increasing their capacity)
+
+Armoury :(inital resource cost to build) stores equipments, takes money, oil and material to maintain i.e remain operational on a daily basis(costs less than camps), can be upgraded using money and materials thus increasing ES. (enemies take over your armoury if they attack and win that region decreasing your ES and increasing theirs.
+
+Headquaters : This is where the new reinforcements from supply lines arrive in a block, the *block of troops can be divided and *sent to different regions you have occupied, head quater can be moved* as per requirement within the regions you have occupied, if the supply line to headquaters is disrupted, a new headquaters needs to be chosen, upgrading headquaters makes supply line provide more money, materials, oil and staff on each turn, losing headquaters to enemy ends the game) (Also costs resources to maintain)
+
+Long range artilery : takes money, oil and material to maintain i.e remain operational on a daily basis (inital resource cost to build), can target any region in its' range and exert control, if there are enemy forces in its' range they will suffer casualities in that region thus morale loss and also some amount of control.
+
+Sniper tower : takes money, oil and material to maintain i.e remain operational on a daily basis (inital resource cost to build), can target any region in its' range and exert control, if there are enemy forces in its' range they will suffer casualities in that region thus morale loss and also some amount of control. (Affects and costs both are less than that of artilery)
+
+Propaganda : costs money to implement, increases morale of your own soldiers by a small amount on each turn while affecting enemy's, can be upgraded using money, both players have a propaganda metric, whoever has more the difference positively affects their own morale and negatively affects enemy's.
+
+Troop block : Troop move in block of specific strength, blocks can be divided and sent to different regions, moving troops from one place to another costs oil, troops can be commanded to move to an unoccupied region to occupy it, you can build things in a place only if you have troops there. Moving to an enemy occupied territory is called lauching an attack, and that's where all the other factors come into play in deciding the attacking/defending power, which is a weighted linear combination of all the factors and hence decide which side will win, more power more troops survive a successful attack/defense, losing an attack/defense loses you all of the troops involved in that attack/defense. Having military camp in a region is not necessary to have troops there, but having one increases capacity thus supply budget of reinforcements. 
+
+Mineral mines/ oil rig : They are distributed randomly in the map and can be occupied to get resources, upgraded to increase their yield, you need to occupy the region with the mine and hava a continous supply line to that region to use its' resources.
+
+Supply Budget : It is the total resources you recieve through supply line on each turn, it increases with you headquater level, amount of territory occupied and bonus if that territory contains rare earth mines.
+
+Turn Income : The amount of total resources you gain from the map, i.e. from mines.
+
+Offensive Income : The resources you gain from successful attacks.  
+
+Turn expenditure : The amount of resources you expend each turn for maintaining all of your infrastructure, if your resources can't afford this each turn, there can be adverse affects like armoury/artillery/military camps losing their functionality thereby reducing yout power, troops not receiving money thereby decreasing their morale and unable to keep up with your enemy's propaganda budget can hurt on a long run.  
+
+Terrain : The play map, there might be some places not letting you go through (steep mountains, water bodies), they can provide both restrictions and strategical benefits.
+
+Regions : The small patches of areas inside the terrain, some may contain mines or a geographical feature to let you pass through, occupying regions increases your supply budget and the amount of region you occupy in the whole terrains determines whether you are winning or losing.
+
+Turns : There is a decision time on each turn where both players claim resources and label their actions in order (troop movements/attacks and upgrades) and then comes the action where the affects take place, battle outcomes are decided in one go after that next decision time begins, decision times are short (45-60)s and order of action matters.
+
+Attack/defenses : If the player sends a block of soldiers in a occupied enemy territory it is an attack, the player can command their block to move straight into the enemy territory in a single turn however they won't know if their block will survive enemy's defense beyond the frontlines, in case the enemy hasn't maintained proper defense, it can result in really big outcomes like destroying enemy's headquarters (taking over that region) if player/enemy hasn't strategically placed troops properly in their occupied territories.
+
+Win conditions:
+1) Enemy's morale drops below 20%, military disobeys and performs a coup.
+2) Enemy headquarters is destroyed
+3) You occupy 80% of the available territory in the whole terrain. (makes sense since you will get a huge supply budget so win is guarrented regardless)
+
+
+notes: 
+
+The combat is deterministic, the propaganda indeed caps and has low effect but can take a toll on long run, and yes the spiral will be there because it is important for mirroring the real world scenarios, it punishes players who can just dive in and push into enemy territory and also motivates each side to continiously expand or lose control, prevents stalemate situations.
+
+
+You can only see what enemy is upto in the frontlines, you will have a map of the whole terrain tho ( wont show the location of mines and rigs ).
+
+
+ playtime is expected to be around 20-30 mins each game so it won't be really very big thus making matches short and intense. (Longer and bigger formats will be there for hardcore players)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,446 @@
+# CERVAEU
+## Official Rulebook
+
+---
+
+## OVERVIEW
+
+Cervaeu is a competitive strategy game where two players battle for territorial control through military might, economic management, and psychological warfare. Victory requires balancing expansion with sustainability while exploiting your opponent's weaknesses.
+
+**Game Length:** 20-30 minutes (standard), longer formats available  
+**Victory Conditions:**
+- Destroy enemy Headquarters
+- Force enemy morale below 20% (triggers military coup)
+- Control 80% of total available territory
+
+---
+
+## CORE CONCEPTS
+
+### The Map
+The battlefield is divided into **Regions** - discrete territorial patches that can be occupied. Regions may contain:
+- **Rare Earth Mines** (provide materials and money)
+- **Oil Rigs** (provide oil)
+- **Strategic chokepoints** (mountain passes, bridges)
+- **Impassable terrain** (steep mountains, water bodies)
+
+### Fog of War
+You can only see enemy activities on the **frontlines** (regions adjacent to yours). Enemy infrastructure and troop positions in their interior remain hidden.
+
+### Supply Lines
+Your supply network functions as a **tree structure** starting from your Supply Source (at map edge). As you occupy new regions, the supply line branches to reach them.
+
+**Critical Rule:** If a region has no path back to your Supply Source through controlled territory, it becomes **isolated** and cannot:
+- Receive supplies or reinforcements
+- Contribute resources to your economy
+- Build or upgrade infrastructure
+
+Isolated regions can only use existing troops to attack or move.
+
+---
+
+## RESOURCES
+
+### Currency Resources
+
+#### 1. MONEY
+**Uses:**
+- Upgrade supply lines
+- Pay staff (daily wages)
+- Maintain infrastructure
+- Build/upgrade infrastructure
+- Run propaganda campaigns
+
+**Income Sources:**
+- Fixed budget from Supply Line (each turn)
+- Occupied territories
+- Rare Earth Mines
+- Successful attacks (offensive income)
+
+#### 2. MATERIALS
+**Uses:**
+- Build infrastructure
+- Upgrade infrastructure
+
+**Income Sources:**
+- Fixed amount from Supply Line (each turn)
+- Occupied territories
+- Material Mines
+
+#### 3. OIL
+**Uses:**
+- Maintain infrastructure (daily)
+- Move troops
+- Launch attacks
+
+**Income Sources:**
+- Fixed amount from Supply Line (each turn)
+- Occupied territories
+- Oil Rigs
+
+### Combat Resources
+
+#### TROOP STRENGTH (TS)
+Represents the raw combat power of your soldiers. Higher TS = stronger attacks.
+
+**Acquisition:** Reinforcements arrive at your Headquarters from the Supply Line each turn. Reinforcement volume depends on:
+- Total capacity (number and level of Military Camps)
+- Headquarters level
+
+#### EQUIPMENT STRENGTH (ES)
+Represents the quality of your military equipment. Higher ES = stronger attacks.
+
+**Improvement:** Upgrade Armouries using Money and Materials.
+
+### Psychological Factors
+
+#### MORALE (M)
+**Range:** 1-100%  
+**Effect on Combat:** Higher morale = stronger attacking power
+
+**Morale is affected by:**
+
+**Increases:**
+- Victory in attacks (+small boost)
+- Victory in defenses (+large boost)
+- Running propaganda campaigns
+- Maintaining regular staff payments
+
+**Decreases:**
+- Casualties from combat
+- Enemy control over your regions
+- Enemy artillery/snipers targeting your positions
+- Enemy propaganda superiority
+- Irregular staff payments
+- Loss of Supply Source (-30% immediately)
+
+**Critical Thresholds:**
+- **Below 30%:** 50% of troops refuse to attack
+- **Below 20%:** All troops disobey orders and launch coup → **YOU LOSE**
+
+#### CONTROL (C)
+**Range:** 0-100% (per region)  
+**Nature:** Local variable - varies region by region
+
+**Control represents your influence over a territory, even if occupied by the enemy.**
+
+**100% Control:** Region occupied by you, no enemy bases adjacent, no enemy artillery/snipers targeting it
+
+**0% Control:** Enemy completely controls region, no friendly military presence or projection
+
+**How Control Works:**
+
+1. **Your military camps in adjacent regions** → increase your control in that region
+2. **Your artillery/snipers targeting a region** → increase your control there
+3. **Enemy forces occupying a region where you have control** → they suffer constant casualties
+4. **Mutual attrition:** If two adjacent regions are occupied by different players and both have military camps, both sides suffer casualties proportional to enemy camp levels
+
+**Effects of Control:**
+- Higher control = better attacking power in that region
+- Control over enemy-occupied regions lowers enemy morale
+- Control causes attrition to enemy forces (gradual casualties)
+
+---
+
+## INFRASTRUCTURE
+
+All infrastructure requires initial resources to build and ongoing resources to maintain each turn.
+
+### HEADQUARTERS
+**Function:** Where reinforcements from Supply Lines arrive  
+**Capacity:** Determines total reinforcement volume per turn  
+**Upgrades:** Increase Money, Materials, Oil, and Troop income from Supply Line
+
+**Special Properties:**
+- Can be relocated to any controlled region
+- If supply line is disrupted, you must choose a new Headquarters location
+- **LOSING YOUR HEADQUARTERS = GAME OVER**
+
+**Maintenance Cost:** Money, Oil, Materials (daily)
+
+### MILITARY CAMPS
+**Function:** 
+- House soldiers
+- Increase reinforcement capacity
+- Exert control over adjacent regions
+- Provide defensive position
+
+**Upgrades:** Increase capacity and control projection radius/strength
+
+**Special Property:** If enemy captures a region with your camp, they gain the camp (increasing their capacity)
+
+**Maintenance Cost:** Money, Oil, Materials (daily) - highest of all buildings
+
+### ARMOURY
+**Function:** Store and maintain equipment  
+**Effect:** Increases your Equipment Strength (ES)
+
+**Upgrades:** Further increase ES
+
+**Special Property:** If enemy captures a region with your Armoury, your ES decreases and theirs increases
+
+**Maintenance Cost:** Money, Oil, Materials (daily) - less than camps
+
+### LONG RANGE ARTILLERY
+**Function:**
+- Target any region within range
+- Exert control over targeted regions
+- Inflict casualties on enemy forces in range
+- Lower enemy morale through constant pressure
+
+**Range:** Multiple regions (specified in game)
+
+**Maintenance Cost:** Money, Oil, Materials (daily)
+
+### SNIPER TOWER
+**Function:** Similar to Artillery but:
+- Shorter range
+- Lower casualties inflicted
+- Lower control projection
+- Lower maintenance cost
+
+**Maintenance Cost:** Money, Oil, Materials (daily) - less than Artillery
+
+### PROPAGANDA CENTER
+**Function:** Psychological warfare  
+**Cost:** Money only (ongoing)
+
+**Upgrades:** Increase effectiveness
+
+**How It Works:**
+- Both players have a Propaganda metric
+- The player with higher Propaganda gains a morale boost
+- The difference in Propaganda levels determines the magnitude
+- Enemy suffers corresponding morale penalty
+- Effects are small per turn but accumulate over time
+
+---
+
+## RESOURCE GENERATION
+
+### Supply Budget
+**Total resources received through Supply Line each turn**
+
+Increases through:
+- Upgrading Headquarters
+- Occupying more territories
+- Controlling territories with Rare Earth Mines
+
+### Turn Income
+**Resources gained from the map (mines and rigs)**
+
+Must maintain continuous supply line to resource node to collect.
+
+### Offensive Income
+**Resources gained from successful attacks**
+
+Based on the value of captured territory and infrastructure.
+
+### Turn Expenditure
+**Total maintenance cost of all infrastructure**
+
+**Warning:** If you cannot afford turn expenditure:
+- Armoury/Artillery/Camps may lose functionality → power decrease
+- Troops don't receive wages → severe morale penalty
+- Cannot match enemy propaganda → long-term morale disadvantage
+
+---
+
+## GAMEPLAY MECHANICS
+
+### Turn Structure
+
+Each turn consists of two phases:
+
+#### 1. DECISION PHASE
+**Duration:** Until player(s) ready (no time limit)
+
+Players simultaneously:
+- Review current state (resources, morale, control, casualties)
+- Plan troop movements
+- Queue attacks
+- Schedule builds/upgrades
+- Allocate resources
+- Set action order (sequence matters!)
+
+Both players can take as long as needed. Turn executes when ready.
+
+#### 2. RESOLUTION PHASE
+**Duration:** Automatic
+
+All actions execute in the order specified:
+1. Resource collection
+2. Troop movements (costs oil)
+3. Combat resolution
+4. Control calculations
+5. Attrition damage
+6. Morale adjustments
+7. Infrastructure maintenance
+8. Propaganda effects
+
+Players observe results before next Decision Phase begins.
+
+### Troop Movement
+
+**Troop Blocks:** Soldiers move in discrete units of specific strength
+
+**Operations:**
+- **Divide blocks:** Split forces to send to different regions
+- **Combine blocks:** Merge forces in same region
+- **Move to unoccupied region:** Occupy new territory (costs oil)
+- **Move to enemy region:** Launch an attack (costs oil)
+
+**Building Requirement:** You can only build infrastructure in regions where you have troops present.
+
+**Camp Requirement:** Military Camps are NOT required to station troops in a region, but they increase capacity for reinforcements.
+
+### Combat Resolution
+
+Combat is **deterministic** - the same inputs always produce the same outputs.
+
+**Attacking Power** = Weighted combination of:
+- Troop Strength (TS)
+- Equipment Strength (ES)
+- Morale (M)
+- Control over target region (C)
+
+**Defending Power** = Same formula, calculated for defender
+
+**Outcome:**
+- Higher power wins the engagement
+- Greater power difference = more survivors on winning side
+- **Losing side loses ALL troops involved in that battle**
+
+### Deep Strikes & Penetration Attacks
+
+**High Risk, High Reward:**
+
+Attacking past frontlines into enemy interior is extremely dangerous:
+
+**Penalties:**
+- Enemy control from camps/artillery causes constant attrition
+- Troops suffer casualties every turn in hostile control zones
+- Casualties lower morale → weakens combat effectiveness
+- Cut off from your supply → cannot reinforce
+- If enemy retakes territory behind you → isolated and doomed
+
+**When It Works:**
+- Overwhelming force that can absorb attrition
+- Coordinated multi-pronged assault creating supply corridor
+- Target softened by your own artillery/control projection first
+- Enemy defenses are poorly positioned (discovered through probing)
+
+**Potential Payoff:**
+- Destroy enemy Headquarters → instant victory
+- Capture critical infrastructure
+- Cut enemy supply lines → isolate their forces
+
+### Mines and Rigs
+
+**Distribution:** Randomly placed on map (locations hidden initially)
+
+**Requirements to Use:**
+- Occupy the region containing the resource node
+- Maintain continuous supply line to that region
+
+**Upgrades:** Spend resources to increase yield
+
+---
+
+## STRATEGIC CONCEPTS
+
+### The Death Spiral
+Early losses can cascade:
+- Defeats → casualties → lower morale → weaker in next battle → more defeats
+- Lost infrastructure → less income → can't maintain remaining buildings → further weakening
+
+**Mitigation:** Careful expansion, defensive depth, economic reserves
+
+### Defensive Depth
+Don't place all infrastructure on frontlines:
+- Interior camps/artillery protect against breakthrough attacks
+- Creates control zones that punish deep strikes with attrition
+- Insurance against losing critical structures
+
+### Supply Line Security
+Your supply network is your lifeline:
+- Protect vulnerable single-path regions
+- Consider redundant paths to critical areas
+- Guard your Supply Source at all costs (-30% morale if lost!)
+
+### Economic Balance
+Three-way tension:
+- **Expand aggressively:** Gain more income but stretch supply lines
+- **Build defenses:** Secure territory but drain maintenance budget
+- **Save reserves:** Weather setbacks but miss opportunities
+
+### Information Warfare
+- Only see frontlines → must deduce enemy infrastructure placement
+- Probe with small attacks to test defenses
+- Watch for control projection to locate hidden camps/artillery
+- Surprise raids require intelligence gathering first
+
+---
+
+## WINNING STRATEGIES
+
+### Military Victory
+Destroy enemy Headquarters through:
+- Overwhelming frontal assault
+- Coordinated deep strike
+- Encirclement and supply line severance
+
+### Psychological Victory
+Drive enemy morale below 20% by:
+- Winning defensive battles (large morale boost)
+- Superior propaganda campaign
+- Artillery/sniper harassment
+- Cutting their Supply Source
+- Destroying their infrastructure
+
+### Territorial Victory
+Control 80% of available territory by:
+- Steady expansion and consolidation
+- Economic superiority from mines/rigs
+- Controlling strategic chokepoints
+- Forcing enemy into defensive collapse
+
+---
+
+## QUICK REFERENCE
+
+### Win Conditions
+✓ Enemy morale < 20% (coup)  
+✓ Enemy Headquarters destroyed  
+✓ Control 80% of territory
+
+### Critical Thresholds
+⚠ Morale < 30%: Half of troops refuse attacks  
+⚠ Morale < 20%: Coup → defeat  
+⚠ Supply Source lost: -30% morale immediately  
+⚠ Cannot afford maintenance: Infrastructure degradation
+
+### Key Formulas
+**Combat Power** = f(TS, ES, M, C)  
+**Supply Budget** = f(HQ level, territories, rare earth mines)  
+**Control per region** = f(adjacent camps, artillery coverage, enemy presence)  
+**Morale change** = f(casualties, victories, propaganda, payments, enemy control)
+
+---
+
+## ADVANCED TIPS
+
+1. **Economic reserves matter:** Always maintain 2-3 turns of maintenance costs in reserve
+2. **Morale is fragile:** A few bad battles can spiral out of control quickly
+3. **Control wins wars:** Long-term control projection beats direct assault
+4. **Order matters:** Sequence your turn actions carefully - move before attacking, build before upgrading
+5. **Defensive victories:** Worth more morale than offensive victories - bait enemies into bad attacks
+6. **Artillery placement:** Interior artillery provides control without frontline vulnerability
+7. **Supply line redundancy:** Create multiple paths to critical regions when possible
+8. **Scout before striking:** Probe defenses with small forces before committing to major offensives
+
+---
+
+**Remember:** In Cervaeu, victory belongs to the commander who balances aggression with sustainability, who reads the battlefield beyond the frontlines, and who understands that breaking the enemy's will is as important as breaking their armies.
+
+Good luck, Commander.
