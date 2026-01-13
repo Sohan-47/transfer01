@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=1280, initial-scale=0.1">
     <title>CERVAEU - Strategic Warfare</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
@@ -40,59 +40,7 @@
             flex-direction: row;
         }
 
-        /* Mobile Layout */
-        @media (max-width: 1000px) {
-            body {
-                flex-direction: column;
-                /* Map Top, UI Bottom */
-            }
 
-            #ui-panel {
-                width: 100% !important;
-                height: 50% !important;
-                /* Give more space to controls */
-                border-left: none !important;
-                border-top: 4px solid #8b4513 !important;
-                padding: 10px !important;
-            }
-
-            /* Compact Action Buttons on Mobile */
-            #ui-panel .section:nth-child(3) {
-                /* Actions Section */
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 5px;
-            }
-
-            #ui-panel .btn {
-                font-size: 11px !important;
-                /* Smaller text */
-                padding: 8px 5px !important;
-                height: auto;
-            }
-
-            /* Make End Turn full width */
-            #ui-panel .btn:first-child {
-                grid-column: span 2;
-                background-color: var(--accent-color);
-                color: white;
-            }
-
-            #game-container {
-                height: 50% !important;
-                width: 100%;
-                overflow: hidden;
-                background: #222;
-                /* Letterbox background */
-            }
-
-            canvas {
-                width: 100%;
-                height: 100%;
-                object-fit: contain;
-                /* Ensure full map visibility */
-            }
-        }
 
 
 
